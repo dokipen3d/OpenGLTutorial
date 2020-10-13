@@ -40,11 +40,6 @@ void MessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity,
     std::string src = errorSourceMap.at(source);
     std::string tp = errorTypeMap.at(type);
     std::string sv = severityMap.at(severity);
-    int found =
-        pystring::find(message, "is being recompiled based on GL state");
-    if (found != -1) {
-        return;
-    }
     fmt::print(
         stderr,
         "GL CALLBACK: {0:s} type = {1:s}, severity = {2:s}, message = {3:s}\n",

@@ -1,4 +1,8 @@
 #include "error_handling.hpp"
+#include <chrono>     // current time
+#include <cmath>      // sin & cos
+#include <string>
+#include <array>
 #include <cstdlib>    // for std::exit()
 #include <fmt/core.h> // for fmt::print(). implements c++20 std::format
 #include <pystring.h>
@@ -12,9 +16,15 @@
 #include <glbinding/gl/gl.h>
 #include <glbinding/glbinding.h>
 
+#include <glbinding-aux/debug.h>
+
+
 using namespace gl;
+using namespace std::chrono;
 
 int main() {
+
+    auto startTime = system_clock::now();
 
     auto window = []() {
         if (!glfwInit()) {
@@ -26,7 +36,7 @@ int main() {
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
 
         /* Create a windowed mode window and its OpenGL context */
-        auto window = glfwCreateWindow(1280, 720, "Chapter 4", NULL, NULL);
+        auto window = glfwCreateWindow(1280, 720, "Chapter 4 - Error Handling", NULL, NULL);
 
         if (!window) {
             fmt::print("window doesn't exist\n");
@@ -43,6 +53,8 @@ int main() {
     glDebugMessageCallback(errorHandler::MessageCallback, 0);
     glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS); // useful for debugging as error
                                            // will occur as we step through
+    //glbinding::aux::enableGetErrorCallback();
+
     const char* vertexShaderSource = R"VERTEX(
         #version 430 core
         out vec3 colour;
@@ -72,8 +84,6 @@ int main() {
         }
     )FRAGMENT";
 
-    glClearColor(0.4f, 0.1f, 0.2f, 1.0f);
-
     auto vertexShader = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vertexShader, 1, &vertexShaderSource, nullptr);
     glCompileShader(vertexShader);
@@ -96,9 +106,17 @@ int main() {
     glCreateVertexArrays(1, &vao);
     glBindVertexArray(vao);
 
+    std::array<GLfloat, 4> clearColour;
+
     while (!glfwWindowShouldClose(window)) {
-        /* Render here */
-        glClear(GL_COLOR_BUFFER_BIT);
+
+        auto currentTime =
+            duration<float>(system_clock::now() - startTime).count();
+        clearColour = {std::sin(currentTime) * 0.5f + 0.5f,
+                       std::cos(currentTime) * 0.5f + 0.5f, 0.2f, 1.0f};
+
+        glClearBufferfv(GL_COLOR, 0, clearColour.data());
+
         glDrawArrays(GL_TRIANGLES, 0, 3);
         glfwSwapBuffers(window);
         glfwPollEvents();
