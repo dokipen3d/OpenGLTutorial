@@ -136,15 +136,11 @@ int main() {
 
         glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "position"), /*buffer index*/ 0);
         glVertexArrayAttribFormat(vao, 0, glm::vec3::length(), GL_FLOAT, GL_FALSE, offsetof(vertex3D, position));
-        glEnableVertexAttribArray(0);
+        glEnableVertexArrayAttrib(vao, 0);
 
         glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "colours"), /*buffs idx*/ 0);
         glVertexArrayAttribFormat(vao, 1, glm::vec3::length(), GL_FLOAT, GL_FALSE, offsetof(vertex3D, normal));
-        glEnableVertexAttribArray(1);
-
-        glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "texCoord"), /*buffs idx*/ 0);
-        glVertexArrayAttribFormat(vao, 2, glm::vec2::length(), GL_FLOAT, GL_FALSE, offsetof(vertex3D, texCoord));
-        glEnableVertexAttribArray(2);
+        glEnableVertexArrayAttrib(vao, 1);
 
         // dont HAVE to use texCoordData
 

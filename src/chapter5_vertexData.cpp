@@ -128,7 +128,7 @@ using namespace std::chrono;
         // data stride
         glVertexArrayAttribFormat(vao, 0, glm::vec2::length(), GL_FLOAT, GL_FALSE, 0);
 
-        glEnableVertexAttribArray(0);
+        glEnableVertexArrayAttrib(vao, 0);
     }
 
     std::array<GLfloat, 4> clearColour;

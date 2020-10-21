@@ -141,8 +141,8 @@ int main() {
 
         // when this is enabled, opengl will use the data set by VAVB and VAAF. if its not enabled shader is provided by
         // glVertexAttrib*
-        glEnableVertexAttribArray(0);
-        glEnableVertexAttribArray(1);
+        glEnableVertexArrayAttrib(vao, 0);
+        glEnableVertexArrayAttrib(vao, 1);
     }
 
     std::array<GLfloat, 4> clearColour;

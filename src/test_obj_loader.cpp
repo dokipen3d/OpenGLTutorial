@@ -31,7 +31,7 @@ using namespace std::chrono;
 
 int main() {
 
-    auto meshData = objLoader::readObjSplit("rubberToy.obj");
+    auto meshData = objLoader::readObjSplit("C:/Users/dokimacbookpro/Documents/Projects/OpenGLutorialOffline/testAsets/box.obj");
 
     auto startLoad = system_clock::now();
 
@@ -40,7 +40,7 @@ int main() {
     std::vector<tinyobj::material_t> materials;
     std::string warn, err;
 
-    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, "rubberToy.obj")) {
+    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, "C:/Users/dokimacbookpro/Documents/Projects/OpenGLutorialOffline/testAsets/box.obj")) {
         throw std::runtime_error(warn + err);
     }
 

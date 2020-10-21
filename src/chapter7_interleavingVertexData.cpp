@@ -136,11 +136,11 @@ int main() {
 
         glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "position"), /*buffer index*/ 0);
         glVertexArrayAttribFormat(vao, 0, glm::vec2::length(), GL_FLOAT, GL_FALSE, offsetof(vertex2D, position));
-        glEnableVertexAttribArray(0);
+        glEnableVertexArrayAttrib(vao, 0);
 
         glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "colours"), /*buffs idx*/ 0);
         glVertexArrayAttribFormat(vao, 1, glm::vec3::length(), GL_FLOAT, GL_FALSE, offsetof(vertex2D, colour));
-        glEnableVertexAttribArray(1);
+        glEnableVertexArrayAttrib(vao, 1);
 
         // buffer to index mapping
         glVertexArrayVertexBuffer(vao, 0, bufferObject, /*offset*/ 0, /*stride*/ sizeof(vertex2D));

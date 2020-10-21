@@ -28,7 +28,7 @@ int main() {
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
 
         /* Create a windowed mode window and its OpenGL context */
-        auto window = glfwCreateWindow(1280, 720, "Chapter 1 - Window Creation", NULL, NULL);
+        auto window = glfwCreateWindow(1280, 720, "Chapter 1 - Window Creation", nullptr, nullptr);
 
         if (!window) {
             fmt::print("window doesn't exist\n");
