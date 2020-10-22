@@ -35,19 +35,22 @@ aux_source_directory(src/ SRC_LIST)
 
 # tells cmake that we are making an exectutable program 
 # whos source is from the files in the SRC_LIST variable
-add_executable(chapter1 src/chapter1_HelloWorld.cpp)
-add_executable(chapter2 src/chapter2_windowCreation.cpp)
-add_executable(chapter3 src/chapter3_helloTriangle.cpp)
-add_executable(chapter4 src/chapter4_errorHandling.cpp)
-add_executable(chapter5 src/chapter5_vertexData.cpp)
-add_executable(chapter6 src/chapter6_multipleBuffers.cpp)
-add_executable(chapter7 src/chapter7_interleavingVertexData.cpp)
-add_executable(chapter8 src/chapter8_loading3DDataFromDisk.cpp)
-add_executable(chapter9 src/chapter9_shaderTransforms.cpp)
-add_executable(chapter10 src/chapter10_elementBuffers.cpp)
-add_executable(chapter11 src/chapter11_textures.cpp)
-add_executable(chapter13 src/chapter13_multipleTextures.cpp)
-add_executable(chapter14 src/chapter14_textureArrays.cpp)
+add_executable(chapter1_HelloWorld src/chapter1_HelloWorld.cpp)
+add_executable(chapter2_windowCreation src/chapter2_windowCreation.cpp)
+add_executable(chapter3_helloTriangle src/chapter3_helloTriangle.cpp)
+add_executable(chapter4_errorHandling src/chapter4_errorHandling.cpp)
+add_executable(chapter5_vertexData src/chapter5_vertexData.cpp)
+add_executable(chapter6_multipleBuffers src/chapter6_multipleBuffers.cpp)
+add_executable(chapter7_interleavingVertexData src/chapter7_interleavingVertexData.cpp)
+add_executable(chapter8_multipleVAOs src/chapter8_multipleVAOs.cpp)
+# 9 fullscreen 2D effects (shadertoy!)
+add_executable(chapter10_loading3DDataFromDisk src/chapter10_loading3DDataFromDisk.cpp)
+add_executable(chapter11_shaderTransforms src/chapter11_shaderTransforms.cpp)
+add_executable(chapter12_elementBuffers src/chapter12_elementBuffers.cpp)
+add_executable(chapter13_textures src/chapter13_textures.cpp)
+# 14 lighting
+add_executable(chapter15_multipleTextures src/chapter15_multipleTextures.cpp)
+add_executable(chapter16_textureArrays src/chapter16_textureArrays.cpp)
 add_executable(testObj src/test_obj_loader.cpp)
 
 
@@ -57,7 +60,6 @@ set_property(GLOBAL PROPERTY CXX_STANDARD 11)
 set(LIBRARIES fmt::fmt
     fmt::fmt-header-only
     glfw
-    libpystring
     ${OPENGL_LIBRARIES}
     glbinding::glbinding
     glbinding::glbinding-aux
@@ -65,19 +67,21 @@ set(LIBRARIES fmt::fmt
     absl::any absl::base absl::bits absl::city
     )
 # which libraries our program must link against
-target_link_libraries(chapter1 PRIVATE ${LIBRARIES})
-target_link_libraries(chapter2 PRIVATE ${LIBRARIES})
-target_link_libraries(chapter3 PRIVATE ${LIBRARIES})
-target_link_libraries(chapter4 PRIVATE ${LIBRARIES})
-target_link_libraries(chapter5 PRIVATE ${LIBRARIES})
-target_link_libraries(chapter6 PRIVATE ${LIBRARIES})
-target_link_libraries(chapter7 PRIVATE ${LIBRARIES})
-target_link_libraries(chapter8 PRIVATE ${LIBRARIES} PUBLIC OpenMP::OpenMP_CXX)
-target_link_libraries(chapter9 PRIVATE ${LIBRARIES} PUBLIC OpenMP::OpenMP_CXX)
-target_link_libraries(chapter10 PRIVATE ${LIBRARIES} PUBLIC OpenMP::OpenMP_CXX)
-target_link_libraries(chapter11 PRIVATE ${LIBRARIES} PUBLIC OpenMP::OpenMP_CXX)
-target_link_libraries(chapter13 PRIVATE ${LIBRARIES} PUBLIC OpenMP::OpenMP_CXX)
-target_link_libraries(chapter14 PRIVATE ${LIBRARIES} PUBLIC OpenMP::OpenMP_CXX)
+target_link_libraries(chapter1_HelloWorld PRIVATE ${LIBRARIES})
+target_link_libraries(chapter2_windowCreation PRIVATE ${LIBRARIES})
+target_link_libraries(chapter3_helloTriangle PRIVATE ${LIBRARIES})
+target_link_libraries(chapter4_errorHandling PRIVATE ${LIBRARIES})
+target_link_libraries(chapter5_vertexData PRIVATE ${LIBRARIES})
+target_link_libraries(chapter6_multipleBuffers PRIVATE ${LIBRARIES})
+target_link_libraries(chapter7_interleavingVertexData PRIVATE ${LIBRARIES})
+target_link_libraries(chapter8_multipleVAOs PRIVATE ${LIBRARIES})
+
+target_link_libraries(chapter10_loading3DDataFromDisk PRIVATE ${LIBRARIES} PUBLIC OpenMP::OpenMP_CXX)
+target_link_libraries(chapter11_shaderTransforms PRIVATE ${LIBRARIES} PUBLIC OpenMP::OpenMP_CXX)
+target_link_libraries(chapter12_elementBuffers PRIVATE ${LIBRARIES} PUBLIC OpenMP::OpenMP_CXX)
+target_link_libraries(chapter13_textures PRIVATE ${LIBRARIES} PUBLIC OpenMP::OpenMP_CXX)
+target_link_libraries(chapter15_multipleTextures PRIVATE ${LIBRARIES} PUBLIC OpenMP::OpenMP_CXX)
+target_link_libraries(chapter16_textureArrays PRIVATE ${LIBRARIES} PUBLIC OpenMP::OpenMP_CXX)
 
 
 target_link_libraries(testObj PRIVATE ${LIBRARIES} PUBLIC OpenMP::OpenMP_CXX)

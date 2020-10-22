@@ -122,17 +122,17 @@ int main() {
         return program;
     }();
 
-    // auto meshData = objLoader::readObjElements("rubberToy.obj");
     //auto meshData = objLoader::readObjElements("rubberToy.obj");
+    //auto meshData = objLoader::readObjElements("C:/Users/dokimacbookpro/Documents/Projects/OpenGLutorialOffline/testAsets/box.obj");
             auto meshData =
-                objLoader::readObjElements("C:/Users/dokimacbookpro/Documents/Projects/San_Miguel/san-miguel-low-poly.obj");
+                objLoader::readObjElements("C:/Users/dokimacbookpro/Documents/Projects/OpenGLutorialOffline/testAsets/tommi.obj");
 
     fmt::print(stderr, "size: {} indices\n", meshData.indices.size());
 
-    //    for (const auto& group : meshData.groupInfos) {
-    //        fmt::print(stderr, "group name: {} with startOffset: {}, count: {}\n", group.name, group.startOffset,
-    //        group.count);
-    //    }
+        for (const auto& group : meshData.groupInfos) {
+            fmt::print(stderr, "group name: {} with startOffset: {}, count: {}\n", group.name, group.startOffset,
+            group.count);
+        }
 
     // buffers
     auto vao = [&program, &meshData]() -> GLuint {
@@ -242,20 +242,20 @@ int main() {
 
         auto currentTime = duration<float>(system_clock::now() - startTime).count();
 
-        view = glm::lookAt(glm::vec3(std::sin(2 * 0.5f) * 4, ((std::sin(3.2 * 0.5f) + 1.0f) / 2.0f) * 0.5,
+        view = glm::lookAt(glm::vec3(std::sin(2 * 0.5f) * 4, ((std::sin(3.2 * 0.5f) + 1.0f) / 2.0f) * 3,
                                      std::cos(2 * 0.5f) * 4), // Camera is at (4,3,3), in World Space
                            glm::vec3(0, 0.7, 0),              // and looks at the origin
                            glm::vec3(0, 1, 0)                 // Head is up (set to 0,-1,0 to lookupside-down)
         );
 
-                view = glm::lookAt(
-                    glm::vec3(12.f, 2.f, 8.f) +
-                        glm::vec3(std::sin(currentTime * 0.5f) * 4, ((std::sin(currentTime * 0.5f) + 1.0f) / 2.0f) *
-                        0.5,
-                                  std::cos(currentTime * 0.5f) * 4), // Camera is at (4,3,3), in World Space
-                    glm::vec3(10.27f, 2.f, 4.83f),                   // and looks at the origin
-                    glm::vec3(0, 1, 0)                               // Head is up (set to 0,-1,0 to look upside-down)
-                );
+//                view = glm::lookAt(
+//                    glm::vec3(12.f, 2.f, 8.f) +
+//                        glm::vec3(std::sin(currentTime * 0.5f) * 4, ((std::sin(currentTime * 0.5f) + 1.0f) / 2.0f) *
+//                        0.5,
+//                                  std::cos(currentTime * 0.5f) * 4), // Camera is at (4,3,3), in World Space
+//                    glm::vec3(10.27f, 2.f, 4.83f),                   // and looks at the origin
+//                    glm::vec3(0, 1, 0)                               // Head is up (set to 0,-1,0 to look upside-down)
+//                );
 
         mvp = projection * view * model;
         glProgramUniformMatrix4fv(program, MVPLocation, 1, GL_FALSE, glm::value_ptr(mvp));

@@ -18,7 +18,7 @@
 #include <cstdlib>
 #include <cstring>
 
-#include <fstream>
+//#include <fstream>
 //#include <iostream>
 #include <omp.h>
 //#include <pystring.h>
@@ -88,7 +88,6 @@ constexpr uint32_t vt = packCharsToIntKey('v', 't');
 constexpr uint32_t vp = packCharsToIntKey('v', 'p');
 constexpr uint32_t f = packCharsToIntKey('f', ' ');
 constexpr uint32_t comment = packCharsToIntKey('#', ' ');
-constexpr uint32_t material = packCharsToIntKey('u', 's');
 
 // add groups
 constexpr uint32_t g = packCharsToIntKey('g', ' ');
@@ -101,10 +100,6 @@ struct groupInfo {
 };
 
 struct RawMeshData {
-
-    RawMeshData() : positions(1), normals(1), textureCoords(1) {
-    }
-    // dummy value at 0. removes the need for subtracting 1 from obj file
     std::vector<glm::vec3> positions;
     std::vector<glm::vec3> normals;
     std::vector<glm::vec2> textureCoords;
@@ -127,12 +122,6 @@ struct MeshDataElements : MeshDataSplit {
     std::vector<int> indices;
 };
 
-RawMeshData readObjRawFast(const std::string& filePath) {
-
-    // fast_obj!!!!
-    return {};
-}
-
 // only supports tris and quads
 RawMeshData readObjRaw(const std::string& filePath) {
 
@@ -142,17 +131,33 @@ RawMeshData readObjRaw(const std::string& filePath) {
 
     fmt::print(stderr, "starting obj loader\n");
     RawMeshData meshData;
+    //    meshData.positions.reserve(51000);
+    //    meshData.normals.reserve(51000);
+    //    meshData.textureCoords.reserve(51000);
 
     char line[128];
     size_t line_buf_size = 0;
     size_t line_size;
 
+    // std::ifstream inputFileStream(filePath, std::ios::in | std::ios::end);
     FILE* fp = fopen(filePath.c_str(), "r");
     if (!fp) {
         fmt::print(stderr, "Error opening file\n");
     }
 
+    // fmt::print(stderr, "{}", line_buf);
+
+    // std::string line;
     std::string face;
+    // std::stringstream ss;
+
+    std::vector<std::string> tokens;
+    std::vector<std::string> faceTokensA;
+    std::vector<std::string> faceTokensB;
+    std::vector<std::string> faceTokensC;
+
+    // if quads
+    std::vector<std::string> faceTokensD;
 
     // for storing where spaces and slashes go
     std::vector<int> spacePositions(8);
@@ -164,35 +169,34 @@ RawMeshData readObjRaw(const std::string& filePath) {
     bool hasNormals = false;
     bool startGroupTracking = false;
     int groupCount = 0;
-    bool groupJustAdded = false;
-    uint16_t key;
+    // while (std::getline(inputFileStream, line)) {
 
     while (fgets(line, 128, fp)) {
+        //        if (line.empty()) {
+        //            continue;
+        //        }
+        line_size = strlen(line);
+        spacePositions.clear();
 
-        { // setup
-            line_size = strlen(line);
-            spacePositions.clear();
-            key = packCharsToIntKey(line[0], line[1]);
-        }
+        uint16_t key = packCharsToIntKey(line[0], line[1]);
 
-        // remove last group if it wasn't a face group
-        if (groupJustAdded && !(key == f || key == material)) {
-            meshData.groupInfos.pop_back();
-
-        }
-        groupJustAdded = false;
-        {
-            // spaces after the first will always be after 3
-            for (auto i = 0u; i < line_size; ++i) {
-                if (line[i] == ' ') {
-                    line[i] = '\0';
-                    spacePositions.push_back(i + 1);
-                }
+        // spaces after the first will always be after 3
+        for (auto i = 0u; i < line_size; ++i) {
+            if (line[i] == ' ') {
+                line[i] = '\0';
+                spacePositions.push_back(i + 1);
             }
-            // signify end of line
-            spacePositions.push_back(line_size);
         }
+        // signify end of line
+        spacePositions.push_back(line_size);
 
+        //        for (auto e : spacePositions) {
+        //            fmt::print("pos {}\n", e);
+        //        }
+        // fmt::print("\n");
+
+        // pystring::split(line, tokens, " ");
+        char* endA;
         switch (key) {
 
         case v: {
@@ -222,48 +226,51 @@ RawMeshData readObjRaw(const std::string& filePath) {
             int a = std::strtol(&line[spacePositions[0]], &end, 10);
             int b = std::strtol(end + (*end == '/'), &end, 10);
             int c = std::strtol(end + (*end == '/'), &end, 10);
-            meshData.faceIndices.emplace_back(a, b, c);
+            meshData.faceIndices.emplace_back(a - 1, b - 1, c - 1);
 
             int d = std::strtol(&line[spacePositions[1]], &end, 10);
             int e = std::strtol(end + (*end == '/'), &end, 10);
             int f = std::strtol(end + (*end == '/'), &end, 10);
 
-            meshData.faceIndices.emplace_back(d, e, f);
+            meshData.faceIndices.emplace_back(d - 1, e - 1, f - 1);
 
             int g = std::strtol(&line[spacePositions[2]], &end, 10);
             int h = std::strtol(end + (*end == '/'), &end, 10);
             int i = std::strtol(end + (*end == '/'), &end, 10);
 
-            meshData.faceIndices.emplace_back(g, h, i);
+            meshData.faceIndices.emplace_back(g - 1, h - 1, i - 1);
 
             if (spacePositions.size() == 5) {
                 // face 0
-                meshData.faceIndices.emplace_back(a, b, c);
+                meshData.faceIndices.emplace_back(a - 1, b - 1, c - 1);
                 // face 2
-                meshData.faceIndices.emplace_back(g, h, i);
+                meshData.faceIndices.emplace_back(g - 1, h - 1, i - 1);
 
                 // reuse def as those temps aren't needed
                 d = std::strtol(&line[spacePositions[3]], &end, 10);
                 e = std::strtol(end + (*end == '/'), &end, 10);
                 f = std::strtol(end + (*end == '/'), &end, 10);
 
-                meshData.faceIndices.emplace_back(d, e, f);
+                meshData.faceIndices.emplace_back(d - 1, e - 1, f - 1);
             }
 
             break;
         }
-
-        case g: {                // add groups
-            if (line_size > 3) { // its a face group with a name as 'g' 'space' '\n' is 3 characters
+        case vp: {
+            break;
+        }
+        // add groups
+        case g: {
+            if (line_size > 3) { // its a face group with a name as 'g' 'space' '\n' is 3 character
                 size_t pos = spacePositions[0];
                 size_t count = spacePositions[1] - spacePositions[0];
-                meshData.groupInfos.push_back({{&line[pos], count-1}, static_cast<int>(meshData.faceIndices.size())});
+                meshData.groupInfos.push_back({{line[pos]}, static_cast<int>(meshData.faceIndices.size())});
 
             } else {
                 meshData.groupInfos.push_back(
                     {fmt::format("group{}", ++groupCount), static_cast<int>(meshData.faceIndices.size())});
             }
-            groupJustAdded = true;
+            //}
             break;
         }
 
@@ -334,14 +341,33 @@ MeshDataElements readObjElements(const std::string& filePath) {
     std::iota(trackingIds.begin(), trackingIds.end(), 0);
     std::iota(trackingUniqueIds.begin(), trackingUniqueIds.end(), 0);
 
+    auto rightshift_func = [&rawMeshData](const int& x) {
+        return mortonIndex64(rawMeshData.faceIndices[x].x, rawMeshData.faceIndices[x].y, rawMeshData.faceIndices[x].z);
+    };
+
+    //    auto rightshift_func = [&rawMeshData](const uint64_t& x, const uint64_t offset) {
+    //        return x >>
+    //               offset;
+    //    };
+
+    auto compare_func = [&rawMeshData](const int a, const int b) {
+        return rawMeshData.faceIndices[a] < rawMeshData.faceIndices[b];
+    };
+    //    boost::sort::spreadsort::integer_sort(trackingIds.begin(), trackingIds.end(), rightshift_func, compare_func);
+
+    // ska_sort(trackingIds.begin(), trackingIds.end(), rightshift_func);
+    // find unique verts. we have already copied face index so order isn't so important any more
+    // std::sort(rawMeshData.faceIndices.begin(), rawMeshData.faceIndices.end());
 
     std::sort(trackingIds.begin(), trackingIds.end(),
               [&rawMeshData](int a, int b) { return rawMeshData.faceIndices[a] < rawMeshData.faceIndices[b]; });
-
+    // boost::sort::parallel_stable_sort(trackingIds.begin(), trackingIds.end(), compare_func);
     auto uniqueEndIt =
         std::unique(trackingUniqueIds.begin(), trackingUniqueIds.end(), [&trackingIds, &rawMeshData](int a, int b) {
             return rawMeshData.faceIndices[trackingIds[a]] == rawMeshData.faceIndices[trackingIds[b]];
         });
+
+    // trackingUniqueIds.erase(uniqueEndIt, trackingUniqueIds.end());
 
     // how many unique vertices
     auto count = std::distance(trackingUniqueIds.begin(), uniqueEndIt);
@@ -352,6 +378,14 @@ MeshDataElements readObjElements(const std::string& filePath) {
     fmt::print(stderr, "tc size {}\n", rawMeshData.textureCoords.size());
 
     fmt::print(stderr, "unique point count is {}\n", count);
+
+    if (rawMeshData.textureCoords.size() == 0) {
+        rawMeshData.textureCoords.resize(rawMeshData.faceIndices.size());
+    }
+
+    if (rawMeshData.normals.size() == 0) {
+        rawMeshData.normals.resize(rawMeshData.faceIndices.size());
+    }
 
     std::atomic<int> k = 0;
 #pragma omp parallel for
@@ -368,8 +402,11 @@ MeshDataElements readObjElements(const std::string& filePath) {
         }
     }
     for (auto j = trackingUniqueIds[count - 1]; j < rawMeshData.faceIndices.size(); ++j) {
+        // meshData.indices[trackingIds[j]] = i - 1;
+        // fmt::print(stderr, "first index is  {}\n", trackingIds[j]);
         meshData.indices[trackingIds[j]] = count - 1;
     }
+    // fmt::print(stderr, "first index is  {}\n", trackingIds[k]);
 
     fmt::print(stderr, "back j {}\n", trackingUniqueIds[count - 1]);
 
