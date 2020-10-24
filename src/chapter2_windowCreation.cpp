@@ -1,10 +1,11 @@
-#include <chrono> // current time
-#include <cmath> // sin & cos
 #include <array>
+#include <chrono>     // current time
+#include <cmath>      // sin & cos
 #include <cstdlib>    // for std::exit()
 #include <fmt/core.h> // for fmt::print(). implements c++20 std::format
-// this is really important to make sure that glbindings does not clash with
-// glfw's opengl includes. otherwise we get ambigous overloads.
+// this is really important to make sure that glbindings does not
+// clash with glfw's opengl includes. otherwise we get ambigous
+// overloads.
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
@@ -18,41 +19,40 @@ int main() {
 
     auto startTime = system_clock::now();
 
-    auto window = []() {
+    const auto windowPtr = []() {
         if (!glfwInit()) {
             fmt::print("glfw didnt initialize!\n");
             std::exit(EXIT_FAILURE);
         }
 
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
 
-        /* Create a windowed mode window and its OpenGL context */
-        auto window = glfwCreateWindow(1280, 720, "Chapter 1 - Window Creation", nullptr, nullptr);
+        auto windowPtr =
+            glfwCreateWindow(1600, 900, "Chapter 2 - Window Creation", nullptr, nullptr);
 
-        if (!window) {
+        if (!windowPtr) {
             fmt::print("window doesn't exist\n");
             glfwTerminate();
             std::exit(EXIT_FAILURE);
         }
+        glfwSetWindowPos(windowPtr, 520, 180);
 
-        glfwMakeContextCurrent(window);
+        glfwMakeContextCurrent(windowPtr);
         glbinding::initialize(glfwGetProcAddress, false);
-        return window;
+        return windowPtr;
     }();
 
     std::array<GLfloat, 4> clearColour;
 
-    while (!glfwWindowShouldClose(window)) {
+    while (!glfwWindowShouldClose(windowPtr)) {
 
-        auto currentTime =
-            duration<float>(system_clock::now() - startTime).count();
-        clearColour = {std::sin(currentTime) * 0.5f + 0.5f,
-                        std::cos(currentTime) * 0.5f + 0.5f, 0.2f, 1.0f};
+        auto currentTime = duration<float>(system_clock::now() - startTime).count();
+        clearColour = {std::sin(currentTime) * 0.5f + 0.5f, std::cos(currentTime) * 0.5f + 0.5f,
+                       0.2f, 1.0f};
 
         glClearBufferfv(GL_COLOR, 0, clearColour.data());
-        glDrawArrays(GL_TRIANGLES, 0, 3);
-        glfwSwapBuffers(window);
+        glfwSwapBuffers(windowPtr);
         glfwPollEvents();
     }
 

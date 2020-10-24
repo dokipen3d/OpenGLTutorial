@@ -34,13 +34,18 @@ using namespace std::chrono;
 
 int main() {
 
+    auto startLoad = system_clock::now();
+
+    auto endLoad = system_clock::now();
+    fmt::print(stderr, "inp {}\n", duration<float>(endLoad - startLoad).count());
+
     auto meshData =
         objLoader::readObjRaw("C:/Users/dokimacbookpro/Documents/Projects/San_Miguel/san-miguel-low-poly.obj");
     // auto meshData =
     // objLoader::readObjRaw("C:/Users/dokimacbookpro/Documents/Projects/OpenGLutorialOffline/testAsets/box.obj");
 
     // mem
-    auto startLoad = system_clock::now();
+    startLoad = system_clock::now();
 
     tinyobj::attrib_t attrib;
     std::vector<tinyobj::shape_t> shapes;
@@ -55,18 +60,18 @@ int main() {
     }
 
     int test = 1;
-    auto endLoad = system_clock::now();
+    endLoad = system_clock::now();
     fmt::print(stderr, "tiny obj time took {}\n", duration<float>(endLoad - startLoad).count());
 
     startLoad = system_clock::now();
     fastObjMesh* mesh = fast_obj_read("C:/Users/dokimacbookpro/Documents/Projects/San_Miguel/san-miguel-low-poly.obj");
     endLoad = system_clock::now();
     fmt::print(stderr, "fast obj time took {}\n", duration<float>(endLoad - startLoad).count());
-    for (unsigned int ii = 0; ii < mesh->group_count; ii++) {
+//    for (unsigned int ii = 0; ii < mesh->group_count; ii++) {
 
-        const fastObjGroup& grp = mesh->groups[ii];
+//        const fastObjGroup& grp = mesh->groups[ii];
 
-        fmt::print(stderr, "fast obj group: {}, face count: {}\n", grp.name, grp.face_count);
+//        fmt::print(stderr, "fast obj group: {}, face count: {}\n", grp.name, grp.face_count);
 
-    }
+//    }
 }

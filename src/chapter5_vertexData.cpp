@@ -22,31 +22,31 @@
 using namespace gl;
 using namespace std::chrono;
 
-    int main() {
+int main() {
 
     auto startTime = system_clock::now();
 
-    auto window = []() {
+    const auto windowPtr = []() {
         if (!glfwInit()) {
             fmt::print("glfw didnt initialize!\n");
             std::exit(EXIT_FAILURE);
         }
 
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
 
-        /* Create a windowed mode window and its OpenGL context */
-        auto window = glfwCreateWindow(1280, 720, "Chapter 5 - Vertex Data", NULL, NULL);
+        auto windowPtr = glfwCreateWindow(1280, 720, "Chapter 5 - Vertex Data", nullptr, nullptr);
 
-        if (!window) {
+        if (!windowPtr) {
             fmt::print("window doesn't exist\n");
             glfwTerminate();
             std::exit(EXIT_FAILURE);
         }
+        glfwSetWindowPos(windowPtr, 520, 180);
 
-        glfwMakeContextCurrent(window);
+        glfwMakeContextCurrent(windowPtr);
         glbinding::initialize(glfwGetProcAddress, false);
-        return window;
+        return windowPtr;
     }();
 
     // debugging
@@ -54,13 +54,13 @@ using namespace std::chrono;
         glEnable(GL_DEBUG_OUTPUT);
         glDebugMessageCallback(errorHandler::MessageCallback, 0);
         glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-        glDebugMessageControl(GL_DEBUG_SOURCE_API, GL_DEBUG_TYPE_OTHER, GL_DEBUG_SEVERITY_NOTIFICATION, 0, nullptr,
-                              false);
+        glDebugMessageControl(GL_DEBUG_SOURCE_API, GL_DEBUG_TYPE_OTHER,
+                              GL_DEBUG_SEVERITY_NOTIFICATION, 0, nullptr, false);
     }
 
     auto program = []() -> GLuint {
         const char* vertexShaderSource = R"(
-            #version 450 core
+            #version 460 core
             layout (location = 0) in vec2 position;
 
             out vec3 vertex_colour;
@@ -72,7 +72,7 @@ using namespace std::chrono;
         )";
 
         const char* fragmentShaderSource = R"(
-            #version 450 core
+            #version 460 core
 
             in vec3 vertex_colour;
             out vec4 finalColor;
@@ -120,7 +120,8 @@ using namespace std::chrono;
         glNamedBufferSubData(bufferObject, 0, vertices.size() * sizeof(glm::vec2), vertices.data());
 
         // attribute to index mapping. can query shader for its attributes
-        glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "position"), /*buffer index*/ 0);
+        glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "position"),
+                                   /*buffer index*/ 0);
 
         // buffer to index mapping
         glVertexArrayVertexBuffer(vao, 0, bufferObject, /*offset*/ 0, sizeof(glm::vec2));
@@ -133,14 +134,17 @@ using namespace std::chrono;
 
     std::array<GLfloat, 4> clearColour;
     glUseProgram(program);
-    while (!glfwWindowShouldClose(window)) {
+    while (!glfwWindowShouldClose(windowPtr)) {
 
         auto currentTime = duration<float>(system_clock::now() - startTime).count();
-        clearColour = {std::sin(currentTime) * 0.5f + 0.5f, std::cos(currentTime) * 0.5f + 0.5f, 0.2f, 1.0f};
+
+        clearColour = {std::sin(currentTime) * 0.5f + 0.5f, std::cos(currentTime) * 0.5f + 0.5f,
+                       0.2f, 1.0f};
 
         glClearBufferfv(GL_COLOR, 0, clearColour.data());
+
         glDrawArrays(GL_TRIANGLES, 0, 3);
-        glfwSwapBuffers(window);
+        glfwSwapBuffers(windowPtr);
         glfwPollEvents();
     }
 

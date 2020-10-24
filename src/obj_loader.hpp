@@ -33,25 +33,25 @@ struct vertex3D {
 
     // for unordered_map
     bool operator==(const vertex3D& other) const {
-        return position == other.position && normal == other.normal && texCoord == other.texCoord;
+        return position == other.position && normal == other.normal &&
+               texCoord == other.texCoord;
     }
 };
 
-inline uint64_t spread_bits_uint64(uint64_t x) {
-    x = (x | (x << 32)) & 0x7fff00000000ffff;
-    x = (x | (x << 16)) & 0x00ff0000ff0000ff;
-    x = (x | (x << 8)) & 0x700f00f00f00f00f;
-    x = (x | (x << 4)) & 0x30c30c30c30c30c3;
-    x = (x | (x << 2)) & 0x1249249249249249;
-    return x;
-}
 
-inline uint64_t mortonIndex64(uint32_t x, uint32_t y, uint32_t z) {
-    return (spread_bits_uint64(x) | (spread_bits_uint64(y) << 1) | (spread_bits_uint64(z) << 2));
-}
-
-// for unordered_map
 namespace std {
+
+inline bool operator<(const glm::ivec3& a, const glm::ivec3& b) {
+    return a.x < b.x ||
+           (a.x == b.x && (a.y < b.y || (a.y == b.y && a.z < b.z)));
+}
+
+template <> struct less<glm::ivec3> {
+    bool operator()(const glm::ivec3& a, const glm::ivec3& b) {
+        return a < b;
+    }
+};
+
 template <> struct hash<vertex3D> {
     size_t operator()(vertex3D const& vertex) const {
         return ((hash<glm::vec3>()(vertex.position) ^ (hash<glm::vec3>()(vertex.normal) << 1)) >> 1) ^
@@ -60,19 +60,6 @@ template <> struct hash<vertex3D> {
 };
 } // namespace std
 
-namespace std {
-
-inline bool operator<(const glm::ivec3& a, const glm::ivec3& b) {
-    return a.x < b.x || (a.x == b.x && (a.y < b.y || (a.y == b.y && a.z < b.z)));
-    // return mortonIndex64(a.x, a.y, a.z) < mortonIndex64(b.x, b.y, b.z);
-}
-
-template <> struct less<glm::ivec3> {
-    bool operator()(const glm::ivec3& a, const glm::ivec3& b) {
-        return a < b;
-    }
-};
-} // namespace std
 
 namespace objLoader {
 
@@ -108,7 +95,8 @@ struct RawMeshData {
     std::vector<glm::vec3> positions;
     std::vector<glm::vec3> normals;
     std::vector<glm::vec2> textureCoords;
-    // store the obj face info interleaved for now. makes finding unique verts easier
+    // store the obj face info interleaved for now. makes finding unique verts
+    // easier
     std::vector<glm::ivec3> faceIndices;
 
     // add groups.
@@ -118,20 +106,14 @@ struct RawMeshData {
 struct MeshDataSplit {
     std::vector<vertex3D> vertices;
     // add groups.
-    // an int which is the start index into the faceIndices of where groups start
-    // to get the range, use the last(-1) offset
+    // an int which is the start index into the faceIndices of where groups
+    // start to get the range, use the last(-1) offset
     std::vector<groupInfo> groupInfos;
 };
 
 struct MeshDataElements : MeshDataSplit {
     std::vector<int> indices;
 };
-
-RawMeshData readObjRawFast(const std::string& filePath) {
-
-    // fast_obj!!!!
-    return {};
-}
 
 // only supports tris and quads
 RawMeshData readObjRaw(const std::string& filePath) {
@@ -178,7 +160,6 @@ RawMeshData readObjRaw(const std::string& filePath) {
         // remove last group if it wasn't a face group
         if (groupJustAdded && !(key == f || key == material)) {
             meshData.groupInfos.pop_back();
-
         }
         groupJustAdded = false;
         {
@@ -196,24 +177,27 @@ RawMeshData readObjRaw(const std::string& filePath) {
         switch (key) {
 
         case v: {
-            meshData.positions.emplace_back(std::strtof(&line[spacePositions[0]], &end),
-                                            std::strtof(&line[spacePositions[1]], nullptr),
-                                            std::strtof(&line[spacePositions[2]], nullptr));
+            meshData.positions.emplace_back(
+                std::strtof(&line[spacePositions[0]], &end),
+                std::strtof(&line[spacePositions[1]], nullptr),
+                std::strtof(&line[spacePositions[2]], nullptr));
 
             break;
         }
         case vn: {
-            meshData.normals.emplace_back(std::strtof(&line[spacePositions[0]], nullptr),
-                                          std::strtof(&line[spacePositions[1]], nullptr),
-                                          std::strtof(&line[spacePositions[2]], nullptr));
+            meshData.normals.emplace_back(
+                std::strtof(&line[spacePositions[0]], nullptr),
+                std::strtof(&line[spacePositions[1]], nullptr),
+                std::strtof(&line[spacePositions[2]], nullptr));
             if (!startGroupTracking) {
                 startGroupTracking = true;
             }
             break;
         }
         case vt: {
-            meshData.textureCoords.emplace_back(std::strtof(&line[spacePositions[0]], nullptr),
-                                                std::strtof(&line[spacePositions[1]], nullptr));
+            meshData.textureCoords.emplace_back(
+                std::strtof(&line[spacePositions[0]], nullptr),
+                std::strtof(&line[spacePositions[1]], nullptr));
             break;
         }
         case f: {
@@ -254,14 +238,18 @@ RawMeshData readObjRaw(const std::string& filePath) {
         }
 
         case g: {                // add groups
-            if (line_size > 3) { // its a face group with a name as 'g' 'space' '\n' is 3 characters
+            if (line_size > 3) { // its a face group with a name as 'g' 'space'
+                                 // '\n' is 3 characters
                 size_t pos = spacePositions[0];
                 size_t count = spacePositions[1] - spacePositions[0];
-                meshData.groupInfos.push_back({{&line[pos], count-1}, static_cast<int>(meshData.faceIndices.size())});
+                meshData.groupInfos.push_back(
+                    {{&line[pos], count - 1},
+                     static_cast<int>(meshData.faceIndices.size())});
 
             } else {
                 meshData.groupInfos.push_back(
-                    {fmt::format("group{}", ++groupCount), static_cast<int>(meshData.faceIndices.size())});
+                    {fmt::format("group{}", ++groupCount),
+                     static_cast<int>(meshData.faceIndices.size())});
             }
             groupJustAdded = true;
             break;
@@ -276,11 +264,12 @@ RawMeshData readObjRaw(const std::string& filePath) {
     }
 
     // fix up groups
-    for (auto it = meshData.groupInfos.begin(); it != meshData.groupInfos.end() - 1; ++it) {
+    for (auto it = meshData.groupInfos.begin();
+         it != meshData.groupInfos.end() - 1; ++it) {
         (*it).count = (*std::next(it)).startOffset - (*it).startOffset;
     }
-    meshData.groupInfos.back().count =
-        static_cast<int>(meshData.faceIndices.size() - meshData.groupInfos.back().startOffset);
+    meshData.groupInfos.back().count = static_cast<int>(
+        meshData.faceIndices.size() - meshData.groupInfos.back().startOffset);
 
     fmt::print(stderr, "finished mesh read\n");
 
@@ -290,7 +279,8 @@ RawMeshData readObjRaw(const std::string& filePath) {
     return meshData;
 }
 
-// for feeding into drawArrays as seperate triangles. hard to misuses as the type indicates the usage
+// for feeding into drawArrays as seperate triangles. hard to misuses as the
+// type indicates the usage
 MeshDataSplit readObjSplit(const std::string& filePath) {
     auto rawMeshData = readObjRaw(filePath);
 
@@ -308,9 +298,10 @@ MeshDataSplit readObjSplit(const std::string& filePath) {
 
 #pragma omp parallel for
     for (int i = 0u; i < rawMeshData.faceIndices.size(); ++i) {
-        meshData.vertices[i] = {rawMeshData.positions[rawMeshData.faceIndices[i].x],
-                                rawMeshData.normals[rawMeshData.faceIndices[i].z],
-                                rawMeshData.textureCoords[rawMeshData.faceIndices[i].y]};
+        meshData.vertices[i] = {
+            rawMeshData.positions[rawMeshData.faceIndices[i].x],
+            rawMeshData.normals[rawMeshData.faceIndices[i].z],
+            rawMeshData.textureCoords[rawMeshData.faceIndices[i].y]};
     }
     return meshData;
 }
@@ -334,22 +325,22 @@ MeshDataElements readObjElements(const std::string& filePath) {
     std::iota(trackingIds.begin(), trackingIds.end(), 0);
     std::iota(trackingUniqueIds.begin(), trackingUniqueIds.end(), 0);
 
-
-    std::sort(trackingIds.begin(), trackingIds.end(),
-              [&rawMeshData](int a, int b) { return rawMeshData.faceIndices[a] < rawMeshData.faceIndices[b]; });
+    std::sort(
+        trackingIds.begin(), trackingIds.end(), [&rawMeshData](int a, int b) {
+            return rawMeshData.faceIndices[a] < rawMeshData.faceIndices[b];
+        });
 
     auto uniqueEndIt =
-        std::unique(trackingUniqueIds.begin(), trackingUniqueIds.end(), [&trackingIds, &rawMeshData](int a, int b) {
-            return rawMeshData.faceIndices[trackingIds[a]] == rawMeshData.faceIndices[trackingIds[b]];
-        });
+        std::unique(trackingUniqueIds.begin(), trackingUniqueIds.end(),
+                    [&trackingIds, &rawMeshData](int a, int b) {
+                        return rawMeshData.faceIndices[trackingIds[a]] ==
+                               rawMeshData.faceIndices[trackingIds[b]];
+                    });
 
     // how many unique vertices
     auto count = std::distance(trackingUniqueIds.begin(), uniqueEndIt);
 
     meshData.vertices.resize(count);
-    fmt::print(stderr, "pos size {}\n", rawMeshData.positions.size());
-    fmt::print(stderr, "norm size {}\n", rawMeshData.normals.size());
-    fmt::print(stderr, "tc size {}\n", rawMeshData.textureCoords.size());
 
     fmt::print(stderr, "unique point count is {}\n", count);
 
@@ -358,22 +349,27 @@ MeshDataElements readObjElements(const std::string& filePath) {
     for (auto i = 1ll; i <= count; ++i) {
 
         meshData.vertices[i - 1] = {
-            rawMeshData.positions[rawMeshData.faceIndices[trackingIds[trackingUniqueIds[i - 1]]].x],
-            rawMeshData.normals[rawMeshData.faceIndices[trackingIds[trackingUniqueIds[i - 1]]].z],
-            rawMeshData.textureCoords[rawMeshData.faceIndices[trackingIds[trackingUniqueIds[i - 1]]].y]};
+            rawMeshData.positions
+                [rawMeshData.faceIndices[trackingIds[trackingUniqueIds[i - 1]]]
+                     .x],
+            rawMeshData
+                .normals[rawMeshData
+                             .faceIndices[trackingIds[trackingUniqueIds[i - 1]]]
+                             .z],
+            rawMeshData.textureCoords
+                [rawMeshData.faceIndices[trackingIds[trackingUniqueIds[i - 1]]]
+                     .y]};
 
         // all the indices that reference this vertex
-        for (auto j = trackingUniqueIds[i - 1]; j < trackingUniqueIds[i]; ++j, k++) {
+        for (auto j = trackingUniqueIds[i - 1]; j < trackingUniqueIds[i];
+             ++j, k++) {
             meshData.indices[trackingIds[j]] = i - 1;
         }
     }
-    for (auto j = trackingUniqueIds[count - 1]; j < rawMeshData.faceIndices.size(); ++j) {
+    for (auto j = trackingUniqueIds[count - 1];
+         j < rawMeshData.faceIndices.size(); ++j) {
         meshData.indices[trackingIds[j]] = count - 1;
     }
-
-    fmt::print(stderr, "back j {}\n", trackingUniqueIds[count - 1]);
-
-    fmt::print(stderr, "max k {}\n", k);
 
     auto timeTaken = duration<float>(system_clock::now() - startTime).count();
     fmt::print(stderr, "indexing time taken {}\n", timeTaken);
@@ -395,12 +391,14 @@ MeshDataElements readObjElementsMap(const std::string& filePath) {
     //#pragma omp parallel for
     for (auto i = 0u; i < rawMeshData.faceIndices.size(); ++i) {
 
-        vertex3D vertex = {rawMeshData.positions[rawMeshData.faceIndices[i].x],
-                           rawMeshData.normals[rawMeshData.faceIndices[i].z],
-                           rawMeshData.textureCoords[rawMeshData.faceIndices[i].y]};
+        vertex3D vertex = {
+            rawMeshData.positions[rawMeshData.faceIndices[i].x],
+            rawMeshData.normals[rawMeshData.faceIndices[i].z],
+            rawMeshData.textureCoords[rawMeshData.faceIndices[i].y]};
 
         if (uniqueVertices.count(vertex) == 0) {
-            uniqueVertices[vertex] = static_cast<uint32_t>(meshData.vertices.size());
+            uniqueVertices[vertex] =
+                static_cast<uint32_t>(meshData.vertices.size());
             meshData.vertices.push_back(vertex);
         }
 

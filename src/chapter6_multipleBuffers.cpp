@@ -25,27 +25,28 @@ int main() {
 
     auto startTime = system_clock::now();
 
-    auto window = []() {
+    const auto windowPtr = []() {
         if (!glfwInit()) {
             fmt::print("glfw didnt initialize!\n");
             std::exit(EXIT_FAILURE);
         }
 
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
 
-        /* Create a windowed mode window and its OpenGL context */
-        auto window = glfwCreateWindow(1280, 720, "Chapter 6 - Multiple Buffers", NULL, NULL);
+        auto windowPtr =
+            glfwCreateWindow(1280, 720, "Chapter 6 - Multiple Buffers", nullptr, nullptr);
 
-        if (!window) {
+        if (!windowPtr) {
             fmt::print("window doesn't exist\n");
             glfwTerminate();
             std::exit(EXIT_FAILURE);
         }
+        glfwSetWindowPos(windowPtr, 520, 180);
 
-        glfwMakeContextCurrent(window);
+        glfwMakeContextCurrent(windowPtr);
         glbinding::initialize(glfwGetProcAddress, false);
-        return window;
+        return windowPtr;
     }();
 
     // debugging
@@ -53,8 +54,8 @@ int main() {
         glEnable(GL_DEBUG_OUTPUT);
         glDebugMessageCallback(errorHandler::MessageCallback, 0);
         glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-        glDebugMessageControl(GL_DEBUG_SOURCE_API, GL_DEBUG_TYPE_OTHER, GL_DEBUG_SEVERITY_NOTIFICATION, 0, nullptr,
-                              false);
+        glDebugMessageControl(GL_DEBUG_SOURCE_API, GL_DEBUG_TYPE_OTHER,
+                              GL_DEBUG_SEVERITY_NOTIFICATION, 0, nullptr, false);
     }
 
     auto program = []() -> GLuint {
@@ -123,12 +124,16 @@ int main() {
         glNamedBufferStorage(bufferObjects[1], colours.size() * sizeof(glm::vec3), nullptr,
                              GL_MAP_WRITE_BIT | GL_DYNAMIC_STORAGE_BIT);
 
-        glNamedBufferSubData(bufferObjects[0], 0, vertices.size() * sizeof(glm::vec2), vertices.data());
-        glNamedBufferSubData(bufferObjects[1], 0, colours.size() * sizeof(glm::vec3), colours.data());
+        glNamedBufferSubData(bufferObjects[0], 0, vertices.size() * sizeof(glm::vec2),
+                             vertices.data());
+        glNamedBufferSubData(bufferObjects[1], 0, colours.size() * sizeof(glm::vec3),
+                             colours.data());
 
         // attribute to index mapping. can query shader for its attributes
-        glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "position"), /*buffer index*/ 0);
-        glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "colours"), /*buffs idx*/ 1);
+        glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "position"),
+                                   /*buffer index*/ 0);
+        glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "colours"),
+                                   /*buffs idx*/ 1);
 
         // buffer to index mapping
         glVertexArrayVertexBuffer(vao, 0, bufferObjects[0], /*offset*/ 0, sizeof(glm::vec2));
@@ -138,8 +143,8 @@ int main() {
         glVertexArrayAttribFormat(vao, 0, glm::vec2::length(), GL_FLOAT, GL_FALSE, 0);
         glVertexArrayAttribFormat(vao, 1, glm::vec3::length(), GL_FLOAT, GL_FALSE, 0);
 
-        // when this is enabled, opengl will use the data set by VAVB and VAAF. if its not enabled shader is provided by
-        // glVertexAttrib*
+        // when this is enabled, opengl will use the data set by VAVB and VAAF.
+        // if its not enabled shader is provided by glVertexAttrib*
         glEnableVertexArrayAttrib(vao, 0);
         glEnableVertexArrayAttrib(vao, 1);
     }
@@ -147,13 +152,14 @@ int main() {
     std::array<GLfloat, 4> clearColour;
     glUseProgram(program);
 
-    while (!glfwWindowShouldClose(window)) {
+    while (!glfwWindowShouldClose(windowPtr)) {
         auto currentTime = duration<float>(system_clock::now() - startTime).count();
-        clearColour = {std::sin(currentTime) * 0.5f + 0.5f, std::cos(currentTime) * 0.5f + 0.5f, 0.2f, 1.0f};
+        clearColour = {std::sin(currentTime) * 0.5f + 0.5f, std::cos(currentTime) * 0.5f + 0.5f,
+                       0.2f, 1.0f};
 
         glClearBufferfv(GL_COLOR, 0, clearColour.data());
         glDrawArrays(GL_TRIANGLES, 0, 3);
-        glfwSwapBuffers(window);
+        glfwSwapBuffers(windowPtr);
         glfwPollEvents();
     }
 

@@ -1,11 +1,11 @@
 #include "error_handling.hpp"
+#include <array>
 #include <chrono>     // current time
 #include <cmath>      // sin & cos
-#include <string>
-#include <array>
 #include <cstdlib>    // for std::exit()
 #include <fmt/core.h> // for fmt::print(). implements c++20 std::format
 #include <pystring.h>
+#include <string>
 #include <unordered_map>
 
 // this is really important to make sure that glbindings does not clash with
@@ -18,7 +18,6 @@
 
 #include <glbinding-aux/debug.h>
 
-
 using namespace gl;
 using namespace std::chrono;
 
@@ -26,37 +25,38 @@ int main() {
 
     auto startTime = system_clock::now();
 
-    auto window = []() {
+    const auto windowPtr = []() {
         if (!glfwInit()) {
             fmt::print("glfw didnt initialize!\n");
             std::exit(EXIT_FAILURE);
         }
 
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
 
-        /* Create a windowed mode window and its OpenGL context */
-        auto window = glfwCreateWindow(1280, 720, "Chapter 4 - Error Handling", NULL, NULL);
+        auto windowPtr =
+            glfwCreateWindow(1280, 720, "Chapter 4 - Error Handling", nullptr, nullptr);
 
-        if (!window) {
+        if (!windowPtr) {
             fmt::print("window doesn't exist\n");
             glfwTerminate();
             std::exit(EXIT_FAILURE);
         }
+        glfwSetWindowPos(windowPtr, 520, 180);
 
-        glfwMakeContextCurrent(window);
+        glfwMakeContextCurrent(windowPtr);
         glbinding::initialize(glfwGetProcAddress, false);
-        return window;
+        return windowPtr;
     }();
 
     glEnable(GL_DEBUG_OUTPUT);
     glDebugMessageCallback(errorHandler::MessageCallback, 0);
     glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS); // useful for debugging as error
                                            // will occur as we step through
-    //glbinding::aux::enableGetErrorCallback();
+    // glbinding::aux::enableGetErrorCallback();
 
     const char* vertexShaderSource = R"VERTEX(
-        #version 430 core
+        #version 460 core
         out vec3 colour;
 
         const vec4 vertices[] = vec4[]( vec4(-0.5f, -0.7f,    0.0, 1.0), 
@@ -74,7 +74,7 @@ int main() {
     )VERTEX";
 
     const char* fragmentShaderSource = R"FRAGMENT(
-        #version 430 core
+        #version 460 core
 
         in vec3 colour;
         out vec4 finalColor;
@@ -108,17 +108,16 @@ int main() {
 
     std::array<GLfloat, 4> clearColour;
 
-    while (!glfwWindowShouldClose(window)) {
+    while (!glfwWindowShouldClose(windowPtr)) {
 
-        auto currentTime =
-            duration<float>(system_clock::now() - startTime).count();
-        clearColour = {std::sin(currentTime) * 0.5f + 0.5f,
-                       std::cos(currentTime) * 0.5f + 0.5f, 0.2f, 1.0f};
+        auto currentTime = duration<float>(system_clock::now() - startTime).count();
+        clearColour = {std::sin(currentTime) * 0.5f + 0.5f, std::cos(currentTime) * 0.5f + 0.5f,
+                       0.2f, 1.0f};
 
         glClearBufferfv(GL_COLOR, 0, clearColour.data());
 
         glDrawArrays(GL_TRIANGLES, 0, 3);
-        glfwSwapBuffers(window);
+        glfwSwapBuffers(windowPtr);
         glfwPollEvents();
     }
 

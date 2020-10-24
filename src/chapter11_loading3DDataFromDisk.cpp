@@ -1,9 +1,12 @@
 #include "error_handling.hpp"
+#include "obj_loader.hpp"
+
 #include <array>
 #include <chrono>     // current time
 #include <cmath>      // sin & cos
 #include <cstdlib>    // for std::exit()
 #include <fmt/core.h> // for fmt::print(). implements c++20 std::format
+#include <pystring.h>
 #include <unordered_map>
 
 // this is really important to make sure that glbindings does not clash with
@@ -17,6 +20,8 @@
 #include <glbinding-aux/debug.h>
 
 #include "glm/glm.hpp"
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 using namespace gl;
 using namespace std::chrono;
@@ -25,7 +30,10 @@ int main() {
 
     auto startTime = system_clock::now();
 
-    const auto windowPtr = []() {
+    const int width = 1280;
+    const int height = 1280;
+
+    auto windowPtr = [](int w, int h) {
         if (!glfwInit()) {
             fmt::print("glfw didnt initialize!\n");
             std::exit(EXIT_FAILURE);
@@ -34,7 +42,8 @@ int main() {
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
 
-        auto windowPtr = glfwCreateWindow(1280, 720, "Chapter 8 - Multiple Vertex Array Objects", nullptr, nullptr);
+        /* Create a windowed mode window and its OpenGL context */
+        auto windowPtr = glfwCreateWindow(w, h, "Chapter 10 - Loading Data from Disk", nullptr, nullptr);
 
         if (!windowPtr) {
             fmt::print("window doesn't exist\n");
@@ -46,7 +55,7 @@ int main() {
         glfwMakeContextCurrent(windowPtr);
         glbinding::initialize(glfwGetProcAddress, false);
         return windowPtr;
-    }();
+    }(width, height);
 
     // debugging
     {
@@ -76,61 +85,58 @@ int main() {
         return program;
     };
 
-    auto program = createProgram(R"(
-        #version 450 core
-        layout (location = 0) in vec3 position;
-        layout (location = 1) in vec3 colours;
+    const char* vertexShaderSource = R"(
+            #version 460 core
+            layout (location = 0) in vec3 position;
+            layout (location = 1) in vec3 normal;
+            layout (location = 2) in vec2 texCoord;
 
-        out vec3 vertex_colour;
+            out vec3 vertex_colour;
 
-        void main(){
-            vertex_colour = colours;
-            gl_Position = vec4(position, 1.0f);
-        }
-    )",
-                                 R"(
-        #version 450 core
+            uniform mat4 projection;
+            uniform float switcher;
 
-        in vec3 vertex_colour;
-        out vec4 finalColor;
+            vec3 remappedColour = (normal + vec3(1.f)) / 2.f;
 
-        void main() {
-            finalColor = vec4(  vertex_colour.x,
-                                vertex_colour.y,
-                                vertex_colour.z,
-                                1.0);
-        }
-    )");
+            void main(){
+                vertex_colour = mix(normal, remappedColour, switcher);
+                gl_Position = vec4((position * vec3(1.0f, 1.0f, -1.0f)) +
+                                   (vec3(0, -0.5, 0) * switcher), 1.0f);
+            }
+        )";
 
-    struct vertex3D {
-        glm::vec3 position;
-        glm::vec3 colour;
-    };
+    const char* fragmentShaderSource = R"(
+            #version 460 core
+
+            in vec3 vertex_colour;
+            out vec4 finalColor;
+
+
+            void main() {
+                finalColor = vec4(vertex_colour, 1.0);
+            }
+        )";
+
+    auto program = createProgram(vertexShaderSource, fragmentShaderSource);
 
     // clang-format off
-    // interleaved data
-    // make 3d to see clipping
-    const std::array<vertex3D, 3> backGroundVertices {{
-        //   position   |     colour
-        {{-1.f, -1.f, 0.f},  {0.12f, 0.14f, 0.16f}},
-        {{ 3.f, -1.f, 0.f},  {0.12f, 0.14f, 0.16f}},
-        {{-1.f,  3.f, 0.f},  {0.80f, 0.80f, 0.82f}}
-    }};
-
-    const std::array<vertex3D, 3> foregroundVertices {{
-        //   position   |     colour
-        {{-0.5f, -0.7f,  0.01f},  {1.f, 0.f, 0.f}},
-        {{0.5f, -0.7f,  -0.01f},  {0.f, 1.f, 0.f}},
-        {{0.0f, 0.6888f, 0.01f}, {0.f, 0.f, 1.f}}
+    const std::vector<vertex3D> backGroundVertices {{
+        //   position   |           normal        |  texCoord
+        {{-1.f, -1.f, -0.999999f},  {0.12f, 0.14f, 0.16f}, {0.f, 0.f}},
+        {{ 3.f, -1.f, -0.999999f},  {0.12f, 0.14f, 0.16f}, {3.f, 0.f}},
+        {{-1.f,  3.f, -0.999999f},  {0.80f, 0.80f, 0.82f}, {0.f, 3.f}}
     }};
     // clang-format on
 
+    auto meshData = objLoader::readObjSplit("rubberToy.obj");
+
+    fmt::print("size {}", meshData.vertices.size());
+
     // buffers
-    auto createBufferAndVao = [&program](const std::array<vertex3D, 3>& vertices) -> GLuint {
+    auto createBufferAndVao = [&program](const std::vector<vertex3D>& vertices) -> GLuint {
         // in core profile, at least 1 vao is needed
         GLuint vao;
         glCreateVertexArrays(1, &vao);
-        glBindVertexArray(vao);
 
         GLuint bufferObject;
         glCreateBuffers(1, &bufferObject);
@@ -139,15 +145,17 @@ int main() {
         glNamedBufferStorage(bufferObject, vertices.size() * sizeof(vertex3D), vertices.data(),
                              GL_MAP_WRITE_BIT | GL_DYNAMIC_STORAGE_BIT);
 
-        glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "position"),
-                                   /*buffer index*/ 0);
+        glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "position"), /*buffer index*/ 0);
         glVertexArrayAttribFormat(vao, 0, glm::vec3::length(), GL_FLOAT, GL_FALSE, offsetof(vertex3D, position));
         glEnableVertexArrayAttrib(vao, 0);
 
-        glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "colours"),
-                                   /*buffs idx*/ 0);
-        glVertexArrayAttribFormat(vao, 1, glm::vec3::length(), GL_FLOAT, GL_FALSE, offsetof(vertex3D, colour));
+        glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "normal"), /*buffs idx*/ 0);
+        glVertexArrayAttribFormat(vao, 1, glm::vec3::length(), GL_FLOAT, GL_FALSE, offsetof(vertex3D, normal));
         glEnableVertexArrayAttrib(vao, 1);
+
+        glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "texCoord"), /*buffs idx*/ 0);
+        glVertexArrayAttribFormat(vao, 2, glm::vec2::length(), GL_FLOAT, GL_FALSE, offsetof(vertex3D, texCoord));
+        glEnableVertexArrayAttrib(vao, 2);
 
         // buffer to index mapping
         glVertexArrayVertexBuffer(vao, 0, bufferObject, /*offset*/ 0,
@@ -157,27 +165,29 @@ int main() {
     };
 
     auto backGroundVao = createBufferAndVao(backGroundVertices);
-    auto foreGroundVao = createBufferAndVao(foregroundVertices);
-
-    std::array<GLfloat, 4> clearColour{0.f, 0.f, 0.f, 0.f};
-    std::array<GLfloat, 1> clearDepth{1.0};
-
-    glUseProgram(program);
+    auto meshVao = createBufferAndVao(meshData.vertices);
 
     glEnable(GL_DEPTH_TEST);
+
+    std::array<GLfloat, 4> clearColour{0.f, 0.f, 0.f, 1.f};
+    GLfloat clearDepth{1.0f};
+
+    int remapUniformLocation = glGetUniformLocation(program, "switcher");
+    glUseProgram(program);
 
     while (!glfwWindowShouldClose(windowPtr)) {
 
         glClearBufferfv(GL_COLOR, 0, clearColour.data());
-        glClearBufferfv(GL_DEPTH, 0, clearDepth.data());
+        glClearBufferfv(GL_DEPTH, 0, &clearDepth);
 
-        // draw bg
         glBindVertexArray(backGroundVao);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glProgramUniform1f(program, remapUniformLocation, 0);
+        glDrawArrays(GL_TRIANGLES, 0, backGroundVertices.size());
 
-        // draw fg
-        glBindVertexArray(foreGroundVao);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glBindVertexArray(meshVao);
+        glProgramUniform1f(program, remapUniformLocation, 1);
+        glDrawArrays(GL_TRIANGLES, 0, meshData.vertices.size());
+
         glfwSwapBuffers(windowPtr);
         glfwPollEvents();
     }
