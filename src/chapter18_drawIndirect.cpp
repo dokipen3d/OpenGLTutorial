@@ -45,7 +45,7 @@ int main() {
 
         /* Create a windowed mode window and its OpenGL context */
         auto window =
-            glfwCreateWindow(1920, 960, "Chapter 17 - Texture Arrays", nullptr, nullptr);
+            glfwCreateWindow(1920, 960, "Chapter 18 - MultiDrawIndirect", nullptr, nullptr);
 
         if (!window) {
             fmt::print("window doesn't exist\n");
@@ -289,6 +289,38 @@ int main() {
     // only do this once now
     glBindTextureUnit(0, textureArrayName);
 
+    struct DrawElementsIndirectCommand {
+        GLuint vertexCount;
+        GLuint instanceCount;
+        GLuint firstIndex;
+        GLint baseVertex;
+        GLuint baseInstance;
+    };
+
+    std::vector<DrawElementsIndirectCommand> bodyDraws = {
+        {groups[0].count, 1, groups[0].startOffset, 0, 0},
+        {groups[1].count, 1, groups[1].startOffset, 0, 0},
+        {groups[2].count, 1, groups[2].startOffset, 0, 0}};
+
+    std::vector<DrawElementsIndirectCommand> clothesDraws = {
+        {groups[3].count, 1, groups[3].startOffset, 0, 0},
+        {groups[4].count, 1, groups[4].startOffset, 0, 0}};
+
+    auto createIndirectBuffer =
+        [](const std::vector<DrawElementsIndirectCommand>& commandBuffer) -> GLuint {
+        GLuint indirectBuffer;
+        glCreateBuffers(1, &indirectBuffer);
+
+        glBindBuffer(GL_DRAW_INDIRECT_BUFFER, indirectBuffer);
+        glNamedBufferStorage(indirectBuffer,
+                             commandBuffer.size() * sizeof(DrawElementsIndirectCommand),
+                             commandBuffer.data(), GL_MAP_WRITE_BIT | GL_DYNAMIC_STORAGE_BIT);
+        return indirectBuffer;
+    };
+
+    auto bodyCommands = createIndirectBuffer(bodyDraws);
+    auto clothesCommands = createIndirectBuffer(clothesDraws);
+
     while (!glfwWindowShouldClose(window)) {
 
         auto currentTime = duration<float>(system_clock::now() - startTime).count();
@@ -323,20 +355,16 @@ int main() {
         // much cheaper than binding texture
         glProgramUniform1i(textureProgram, textureSliceLocation, 0);
 
-        glDrawElements(GL_TRIANGLES, groups[0].count, GL_UNSIGNED_INT,
-                       (void*)(sizeof(GLuint) * groups[0].startOffset));
-        glDrawElements(GL_TRIANGLES, groups[1].count, GL_UNSIGNED_INT,
-                       (void*)(sizeof(GLuint) * groups[1].startOffset));
-        glDrawElements(GL_TRIANGLES, groups[2].count, GL_UNSIGNED_INT,
-                       (void*)(sizeof(GLuint) * groups[2].startOffset));
+        //right before call bind buffer
+        glBindBuffer(GL_DRAW_INDIRECT_BUFFER, bodyCommands);
+        glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, nullptr, bodyDraws.size(), 0);
 
         // much cheaper than binding texture
         glProgramUniform1i(textureProgram, textureSliceLocation, 1);
 
-        glDrawElements(GL_TRIANGLES, groups[3].count, GL_UNSIGNED_INT,
-                       (void*)(sizeof(GLuint) * groups[3].startOffset));
-        glDrawElements(GL_TRIANGLES, groups[4].count, GL_UNSIGNED_INT,
-                       (void*)(sizeof(GLuint) * groups[4].startOffset));
+        //right before call bind buffer
+        glBindBuffer(GL_DRAW_INDIRECT_BUFFER, clothesCommands);
+        glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, nullptr, clothesDraws.size(), 0);
 
         glfwSwapBuffers(window);
         glfwPollEvents();

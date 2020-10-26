@@ -25,10 +25,8 @@ find_package(glbinding CONFIG REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)
 find_package(glm REQUIRED)
 find_package(fmt CONFIG REQUIRED)
-find_package(Assimp CONFIG REQUIRED)
 find_package(tinyobjloader CONFIG REQUIRED)
 find_package(OpenMP)
-find_package(absl CONFIG REQUIRED)
 
 # takes the files in the src directory and adds them to a variable called SRC_LIST
 aux_source_directory(src/ SRC_LIST)
@@ -49,9 +47,12 @@ add_executable(chapter11_loading3DDataFromDisk src/chapter11_loading3DDataFromDi
 add_executable(chapter12_shaderTransforms src/chapter12_shaderTransforms.cpp)
 add_executable(chapter13_elementBuffers src/chapter13_elementBuffers.cpp)
 add_executable(chapter14_textures src/chapter14_textures.cpp)
-# 15 lighting
+add_executable(chapter15_basicDiffuseLighting src/chapter15_basicDiffuseLighting.cpp)
 add_executable(chapter16_multipleTextures src/chapter16_multipleTextures.cpp)
 add_executable(chapter17_textureArrays src/chapter17_textureArrays.cpp)
+add_executable(chapter18_drawIndirect src/chapter18_drawIndirect.cpp)
+add_executable(chapter19_multiDrawIndexingBuffers src/chapter19_multiDrawIndexingBuffers.cpp)
+
 add_executable(testObj src/test_obj_loader.cpp)
 
 
@@ -65,7 +66,6 @@ set(LIBRARIES fmt::fmt
     glbinding::glbinding
     glbinding::glbinding-aux
     ${STB_INCLUDE_DIRS}
-    absl::any absl::base absl::bits absl::city
     )
 # which libraries our program must link against
 target_link_libraries(chapter1_HelloWorld PRIVATE ${LIBRARIES})
@@ -83,9 +83,11 @@ target_link_libraries(chapter11_loading3DDataFromDisk PRIVATE ${LIBRARIES} PUBLI
 target_link_libraries(chapter12_shaderTransforms PRIVATE ${LIBRARIES} PUBLIC OpenMP::OpenMP_CXX)
 target_link_libraries(chapter13_elementBuffers PRIVATE ${LIBRARIES} PUBLIC OpenMP::OpenMP_CXX)
 target_link_libraries(chapter14_textures PRIVATE ${LIBRARIES} PUBLIC OpenMP::OpenMP_CXX)
+target_link_libraries(chapter15_basicDiffuseLighting PRIVATE ${LIBRARIES} PUBLIC OpenMP::OpenMP_CXX)
 target_link_libraries(chapter16_multipleTextures PRIVATE ${LIBRARIES} PUBLIC OpenMP::OpenMP_CXX)
 target_link_libraries(chapter17_textureArrays PRIVATE ${LIBRARIES} PUBLIC OpenMP::OpenMP_CXX)
-
+target_link_libraries(chapter18_drawIndirect PRIVATE ${LIBRARIES} PUBLIC OpenMP::OpenMP_CXX)
+target_link_libraries(chapter19_multiDrawIndexingBuffers PRIVATE ${LIBRARIES} PUBLIC OpenMP::OpenMP_CXX)
 
 target_link_libraries(testObj PRIVATE ${LIBRARIES} PUBLIC OpenMP::OpenMP_CXX)
 

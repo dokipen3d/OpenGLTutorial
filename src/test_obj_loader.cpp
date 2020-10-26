@@ -40,7 +40,8 @@ int main() {
     fmt::print(stderr, "inp {}\n", duration<float>(endLoad - startLoad).count());
 
     auto meshData =
-        objLoader::readObjRaw("C:/Users/dokimacbookpro/Documents/Projects/San_Miguel/san-miguel-low-poly.obj");
+        objLoader::readObjRaw("C:/Users/dokimacbookpro/Documents/Projects/San_Miguel/san-miguel-low-poly.obj",
+                              "C:/Users/dokimacbookpro/Documents/Projects/San_Miguel/san-miguel-low-poly.mtl");
     // auto meshData =
     // objLoader::readObjRaw("C:/Users/dokimacbookpro/Documents/Projects/OpenGLutorialOffline/testAsets/box.obj");
 

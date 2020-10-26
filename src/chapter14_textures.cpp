@@ -42,7 +42,8 @@ int main() {
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
 
         /* Create a windowed mode window and its OpenGL context */
-        auto window = glfwCreateWindow(1920, 960, "Chapter 11 - Shader Transforms", nullptr, nullptr);
+        auto window =
+            glfwCreateWindow(1920, 960, "Chapter 14 - Textures", nullptr, nullptr);
 
         if (!window) {
             fmt::print("window doesn't exist\n");
@@ -62,11 +63,12 @@ int main() {
         glEnable(GL_DEBUG_OUTPUT);
         glDebugMessageCallback(errorHandler::MessageCallback, 0);
         glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-        glDebugMessageControl(GL_DEBUG_SOURCE_API, GL_DEBUG_TYPE_OTHER, GL_DEBUG_SEVERITY_NOTIFICATION, 0, nullptr,
-                              false);
+        glDebugMessageControl(GL_DEBUG_SOURCE_API, GL_DEBUG_TYPE_OTHER,
+                              GL_DEBUG_SEVERITY_NOTIFICATION, 0, nullptr, false);
     }
 
-    auto createShaderProgram = [](const char* vertexShaderSource, const char* fragmentShaderSource) -> GLuint {
+    auto createShaderProgram = [](const char* vertexShaderSource,
+                                  const char* fragmentShaderSource) -> GLuint {
         auto vertexShader = glCreateShader(GL_VERTEX_SHADER);
         glShaderSource(vertexShader, 1, &vertexShaderSource, nullptr);
         glCompileShader(vertexShader);
@@ -147,8 +149,8 @@ int main() {
     auto meshData = objLoader::readObjElements("rubberToy.obj");
 
     // buffers
-    auto createBufferAndVao = [](const std::vector<vertex3D>& vertices, const std::vector<int>& indices,
-                                 GLuint program) -> GLuint {
+    auto createBufferAndVao = [](const std::vector<vertex3D>& vertices,
+                                 const std::vector<int>& indices, GLuint program) -> GLuint {
         // in core profile, at least 1 vao is needed
         GLuint vao;
         glCreateVertexArrays(1, &vao);
@@ -160,16 +162,20 @@ int main() {
         glNamedBufferStorage(bufferObject, vertices.size() * sizeof(vertex3D), vertices.data(),
                              GL_MAP_WRITE_BIT | GL_DYNAMIC_STORAGE_BIT);
 
-        glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "position"), /*buffer index*/ 0);
-        glVertexArrayAttribFormat(vao, 0, glm::vec3::length(), GL_FLOAT, GL_FALSE, offsetof(vertex3D, position));
+        glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "position"),
+                                   /*buffer index*/ 0);
+        glVertexArrayAttribFormat(vao, 0, glm::vec3::length(), GL_FLOAT, GL_FALSE,
+                                  offsetof(vertex3D, position));
         glEnableVertexArrayAttrib(vao, 0);
 
         glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "normal"), /*buffs idx*/ 0);
-        glVertexArrayAttribFormat(vao, 1, glm::vec3::length(), GL_FLOAT, GL_FALSE, offsetof(vertex3D, normal));
+        glVertexArrayAttribFormat(vao, 1, glm::vec3::length(), GL_FLOAT, GL_FALSE,
+                                  offsetof(vertex3D, normal));
         glEnableVertexArrayAttrib(vao, 1);
 
         glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "texCoord"), /*buffs idx*/ 0);
-        glVertexArrayAttribFormat(vao, 2, glm::vec2::length(), GL_FLOAT, GL_FALSE, offsetof(vertex3D, texCoord));
+        glVertexArrayAttribFormat(vao, 2, glm::vec2::length(), GL_FLOAT, GL_FALSE,
+                                  offsetof(vertex3D, texCoord));
         glEnableVertexArrayAttrib(vao, 2);
 
         // buffer to index mapping
@@ -180,8 +186,8 @@ int main() {
         if (indices.size() > 0) {
             GLuint elemementBufferObject;
             glCreateBuffers(1, &elemementBufferObject);
-            glNamedBufferStorage(elemementBufferObject, indices.size() * sizeof(GLuint), indices.data(),
-                                 GL_MAP_WRITE_BIT | GL_DYNAMIC_STORAGE_BIT);
+            glNamedBufferStorage(elemementBufferObject, indices.size() * sizeof(GLuint),
+                                 indices.data(), GL_MAP_WRITE_BIT | GL_DYNAMIC_STORAGE_BIT);
             glVertexArrayElementBuffer(vao, elemementBufferObject);
         }
         return vao;
@@ -206,7 +212,8 @@ int main() {
         glTextureParameteri(textureName, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
         glTextureStorage2D(textureName, 1, GL_RGB8, texWidth, texHeight);
-        glTextureSubImage2D(textureName, 0, 0, 0, texWidth, texHeight, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+        glTextureSubImage2D(textureName, 0, 0, 0, texWidth, texHeight, GL_RGB, GL_UNSIGNED_BYTE,
+                            pixels);
         glGenerateTextureMipmap(textureName);
 
         stbi_image_free(pixels);
@@ -231,7 +238,9 @@ int main() {
     int mvpLocationVertex = glGetUniformLocation(vertexColourProgram, "MVP");
     int mvpLocationTexture = glGetUniformLocation(textureProgram, "MVP");
 
-    glBindTextureUnit(0, textureName); // bind once. we will be using texture arrays in the future. maybe bindless?
+    glBindTextureUnit(
+        0,
+        textureName); // bind once. we will be using texture arrays in the future. maybe bindless?
 
     while (!glfwWindowShouldClose(window)) {
         auto currentTime = duration<float>(system_clock::now() - startTime).count();
@@ -243,7 +252,8 @@ int main() {
         glBindVertexArray(backGroundVao);
         glUseProgram(vertexColourProgram);
 
-        glProgramUniformMatrix4fv(vertexColourProgram, mvpLocationVertex, 1, GL_FALSE, glm::value_ptr(ortho));
+        glProgramUniformMatrix4fv(vertexColourProgram, mvpLocationVertex, 1, GL_FALSE,
+                                  glm::value_ptr(ortho));
 
         glDrawArrays(GL_TRIANGLES, 0, backGroundVertices.size());
 
@@ -251,15 +261,16 @@ int main() {
         glBindVertexArray(meshVao);
         glUseProgram(textureProgram);
 
-        view =
-            glm::lookAt(glm::vec3(std::sin(currentTime * 0.5f) * 2, ((std::sin(currentTime * 0.32f) + 1.0f) / 2.0f) * 2,
-                                  std::cos(currentTime * 0.5f) * 2), // lookAt Vector
-                        glm::vec3(0, 0.4, 0),                        // and looks at the origin
-                        glm::vec3(0, 1, 0)                           // Head is up (set to 0,-1,0 to look upside-down)
-            );
+        view = glm::lookAt(glm::vec3(std::sin(currentTime * 0.5f) * 2,
+                                     ((std::sin(currentTime * 0.32f) + 1.0f) / 2.0f) * 2,
+                                     std::cos(currentTime * 0.5f) * 2), // lookAt Vector
+                           glm::vec3(0, 0.4, 0),                        // and looks at the origin
+                           glm::vec3(0, 1, 0) // Head is up (set to 0,-1,0 to look upside-down)
+        );
 
         mvp = projection * view * model;
-        glProgramUniformMatrix4fv(textureProgram, mvpLocationTexture, 1, GL_FALSE, glm::value_ptr(mvp));
+        glProgramUniformMatrix4fv(textureProgram, mvpLocationTexture, 1, GL_FALSE,
+                                  glm::value_ptr(mvp));
 
         glDrawElements(GL_TRIANGLES, meshData.indices.size(), GL_UNSIGNED_INT, 0);
 

@@ -45,7 +45,7 @@ int main() {
 
         /* Create a windowed mode window and its OpenGL context */
         auto window =
-            glfwCreateWindow(1920, 960, "Chapter 17 - Texture Arrays", nullptr, nullptr);
+            glfwCreateWindow(1920, 960, "Chapter 19 - MultiDrawIndirect buffers", nullptr, nullptr);
 
         if (!window) {
             fmt::print("window doesn't exist\n");
@@ -94,10 +94,14 @@ int main() {
             layout (location = 0) in vec3 aPosition;
             layout (location = 1) in vec3 aNormal;
             layout (location = 2) in vec2 aTexCoord;
+            layout (location = 3) in float aTextureIndex;
+
 
             layout (location = 0) out vec3 normal;
             layout (location = 1) out vec2 uv;
             layout (location = 2) out vec3 position;
+            layout (location = 3) out flat float textureIndex;
+
 
             uniform mat4 MVP;
 
@@ -105,6 +109,7 @@ int main() {
                 position = aPosition;
                 normal = aNormal;
                 uv = aTexCoord;
+                textureIndex = aTextureIndex;
 
                 gl_Position = MVP * vec4(aPosition, 1.0f);
             }
@@ -131,16 +136,14 @@ int main() {
             layout (location = 0) in vec3 normal;
             layout (location = 1) in vec2 uv;
             layout (location = 2) in vec3 position;
+            layout (location = 3) in flat float textureIndex;
 
             out vec4 finalColor;
 
             vec3 lightPosition = vec3(1,1,1);
             vec3 lightPosition2 = vec3(-2,0,0);
 
-
             uniform sampler2DArray Texture;
-            uniform int textureIndex;
-
 
             void main() {
                 vec3 lightDirection = normalize(lightPosition - position);
@@ -149,7 +152,6 @@ int main() {
                 float diffuseLighting = max(dot(normalize(normal), lightDirection), 0);
                 float diffuseLighting2 = max(dot(normalize(normal), lightDirection2), 0);
 
-                //float diffuseLighting = (dot(normalize(normal), lightDirection)+1.f)/2.f;
                 vec4 textureSample = texture(Texture, vec3(uv, textureIndex));
                 finalColor = textureSample * (diffuseLighting + diffuseLighting2 * 0.5f);
             }
@@ -207,7 +209,7 @@ int main() {
 
         // buffer to index mapping
         glVertexArrayVertexBuffer(vao, 0, bufferObject, /*offset*/ 0,
-                                  /*stride*/ sizeof(vertex3D));
+                                  /*stride in bytes*/ sizeof(vertex3D));
 
         // NEW! element buffer
         if (indices.size() > 0) {
@@ -222,6 +224,28 @@ int main() {
 
     auto backGroundVao = createBufferAndVao(backGroundVertices, {}, vertexColourProgram);
     auto meshVao = createBufferAndVao(meshData.vertices, meshData.indices, textureProgram);
+
+    std::vector<GLfloat> textureIndices = {0.f, 0.f, 0.f, 1.f, 1.f};
+
+    // setup texture indices
+    {
+        GLuint bufferObject2;
+
+        // one buffer to be shared amonst vaos
+        glCreateBuffers(1, &bufferObject2);
+        glNamedBufferStorage(bufferObject2, textureIndices.size() * sizeof(GLfloat),
+                             textureIndices.data(), GL_MAP_WRITE_BIT | GL_DYNAMIC_STORAGE_BIT);
+
+        glVertexArrayAttribFormat(meshVao, 3, 1, GL_FLOAT, GL_FALSE, 0);
+        glEnableVertexArrayAttrib(meshVao, 3);
+
+        glVertexArrayAttribBinding(meshVao, glGetAttribLocation(textureProgram, "aTextureIndex"),
+                                   /*buffer index*/ 1); // <-- new buffer
+        glVertexArrayVertexBuffer(meshVao, 1, bufferObject2, /*offset*/ 0, sizeof(GLfloat));
+
+        // IMPORTANT!!! 1) otherwise shader is per vertex. 2) second arg is the BINDING POINT!
+        glVertexArrayBindingDivisor(meshVao, 1, 1);
+    }
 
     // texture
     auto textureGenerator = [](const std::vector<std::string>& filePaths) -> GLuint {
@@ -282,12 +306,40 @@ int main() {
     int mvpLocationVertex = glGetUniformLocation(vertexColourProgram, "MVP");
     int mvpLocationTexture = glGetUniformLocation(textureProgram, "MVP");
 
-    int textureSliceLocation = glGetUniformLocation(textureProgram, "textureIndex");
-
     auto groups = meshData.groupInfos;
 
     // only do this once now
     glBindTextureUnit(0, textureArrayName);
+
+    struct DrawElementsIndirectCommand {
+        GLuint vertexCount;
+        GLuint instanceCount;
+        GLuint firstIndex;
+        GLint baseVertex;
+        GLuint baseInstance;
+    };
+
+    std::vector<DrawElementsIndirectCommand> allDraws = {
+        {groups[0].count, 1, groups[0].startOffset, 0, 0},
+        {groups[1].count, 1, groups[1].startOffset, 0, 1},
+        {groups[2].count, 1, groups[2].startOffset, 0, 2},
+        {groups[3].count, 1, groups[3].startOffset, 0, 3},
+        {groups[4].count, 1, groups[4].startOffset, 0, 4}};
+
+    auto createIndirectBuffer =
+        [](const std::vector<DrawElementsIndirectCommand>& commandBuffer) -> GLuint {
+        GLuint indirectBuffer;
+        glCreateBuffers(1, &indirectBuffer);
+
+        glBindBuffer(GL_DRAW_INDIRECT_BUFFER, indirectBuffer);
+        glNamedBufferStorage(indirectBuffer,
+                             commandBuffer.size() * sizeof(DrawElementsIndirectCommand),
+                             commandBuffer.data(), GL_MAP_WRITE_BIT | GL_DYNAMIC_STORAGE_BIT);
+        return indirectBuffer;
+    };
+
+    auto allCommands = createIndirectBuffer(allDraws);
+    glBindBuffer(GL_DRAW_INDIRECT_BUFFER, allCommands);
 
     while (!glfwWindowShouldClose(window)) {
 
@@ -320,23 +372,8 @@ int main() {
         glProgramUniformMatrix4fv(textureProgram, mvpLocationTexture, 1, GL_FALSE,
                                   glm::value_ptr(mvp));
 
-        // much cheaper than binding texture
-        glProgramUniform1i(textureProgram, textureSliceLocation, 0);
-
-        glDrawElements(GL_TRIANGLES, groups[0].count, GL_UNSIGNED_INT,
-                       (void*)(sizeof(GLuint) * groups[0].startOffset));
-        glDrawElements(GL_TRIANGLES, groups[1].count, GL_UNSIGNED_INT,
-                       (void*)(sizeof(GLuint) * groups[1].startOffset));
-        glDrawElements(GL_TRIANGLES, groups[2].count, GL_UNSIGNED_INT,
-                       (void*)(sizeof(GLuint) * groups[2].startOffset));
-
-        // much cheaper than binding texture
-        glProgramUniform1i(textureProgram, textureSliceLocation, 1);
-
-        glDrawElements(GL_TRIANGLES, groups[3].count, GL_UNSIGNED_INT,
-                       (void*)(sizeof(GLuint) * groups[3].startOffset));
-        glDrawElements(GL_TRIANGLES, groups[4].count, GL_UNSIGNED_INT,
-                       (void*)(sizeof(GLuint) * groups[4].startOffset));
+        // right before call bind buffer
+        glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, nullptr, allDraws.size(), 0);
 
         glfwSwapBuffers(window);
         glfwPollEvents();

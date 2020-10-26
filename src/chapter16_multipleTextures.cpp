@@ -44,7 +44,8 @@ int main() {
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
 
         /* Create a windowed mode window and its OpenGL context */
-        auto window = glfwCreateWindow(1920, 960, "Chapter 9 - Shader Transforms", nullptr, nullptr);
+        auto window =
+            glfwCreateWindow(1920, 960, "Chapter 16 - Multiple Textures", nullptr, nullptr);
 
         if (!window) {
             fmt::print("window doesn't exist\n");
@@ -52,7 +53,10 @@ int main() {
             std::exit(EXIT_FAILURE);
         }
 
+
         glfwMakeContextCurrent(window);
+        glfwSwapInterval(0);
+
         glbinding::initialize(glfwGetProcAddress, false);
         return window;
     }();
@@ -62,11 +66,12 @@ int main() {
         glEnable(GL_DEBUG_OUTPUT);
         glDebugMessageCallback(errorHandler::MessageCallback, 0);
         glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-        glDebugMessageControl(GL_DEBUG_SOURCE_API, GL_DEBUG_TYPE_OTHER, GL_DEBUG_SEVERITY_NOTIFICATION, 0, nullptr,
-                              false);
+        glDebugMessageControl(GL_DEBUG_SOURCE_API, GL_DEBUG_TYPE_OTHER,
+                              GL_DEBUG_SEVERITY_NOTIFICATION, 0, nullptr, false);
     }
 
-    auto createShaderProgram = [](const char* vertexShaderSource, const char* fragmentShaderSource) -> GLuint {
+    auto createShaderProgram = [](const char* vertexShaderSource,
+                                  const char* fragmentShaderSource) -> GLuint {
         auto vertexShader = glCreateShader(GL_VERTEX_SHADER);
         glShaderSource(vertexShader, 1, &vertexShaderSource, nullptr);
         glCompileShader(vertexShader);
@@ -87,19 +92,22 @@ int main() {
 
     const char* vertexShaderSource = R"(
             #version 460 core
-            layout (location = 0) in vec3 position;
-            layout (location = 1) in vec3 normal;
-            layout (location = 2) in vec2 texCoord;
+            layout (location = 0) in vec3 aPosition;
+            layout (location = 1) in vec3 aNormal;
+            layout (location = 2) in vec2 aTexCoord;
 
-            layout (location = 0) out vec3 colour;
+            layout (location = 0) out vec3 normal;
             layout (location = 1) out vec2 uv;
+            layout (location = 2) out vec3 position;
 
             uniform mat4 MVP;
 
             void main(){
-                colour = normal;
-                uv = texCoord;
-                gl_Position = MVP * vec4(position, 1.0f);
+                position = aPosition;
+                normal = aNormal;
+                uv = aTexCoord;
+
+                gl_Position = MVP * vec4(aPosition, 1.0f);
             }
         )";
 
@@ -107,12 +115,13 @@ int main() {
     const char* fragmentShaderSourceColour = R"(
             #version 460 core
 
-            layout (location = 0) in vec3 colour;
+            layout (location = 0) in vec3 normal;
             layout (location = 1) in vec2 uv;
+
             out vec4 finalColor;
 
             void main() {
-                finalColor = vec4(colour, 1.0f);
+                finalColor = vec4(normal, 1.0f);
             }
         )";
 
@@ -120,15 +129,28 @@ int main() {
     const char* fragmentShaderSourceTexture = R"(
             #version 460 core
 
-            layout (location = 0) in vec3 colour;
+            layout (location = 0) in vec3 normal;
             layout (location = 1) in vec2 uv;
+            layout (location = 2) in vec3 position;
 
             out vec4 finalColor;
+
+            vec3 lightPosition = vec3(1,1,1);
+            vec3 lightPosition2 = vec3(-2,0,0);
+
 
             uniform sampler2D Texture;
 
             void main() {
-                finalColor = texture(Texture, uv);
+                vec3 lightDirection = normalize(lightPosition - position);
+                vec3 lightDirection2 = normalize(lightPosition2 - position);
+
+                float diffuseLighting = max(dot(normalize(normal), lightDirection), 0);
+                float diffuseLighting2 = max(dot(normalize(normal), lightDirection2), 0);
+
+                //float diffuseLighting = (dot(normalize(normal), lightDirection)+1.f)/2.f;
+                vec4 textureSample = texture(Texture, uv);
+                finalColor = textureSample * (diffuseLighting + diffuseLighting2 * 0.5f);
             }
         )";
 
@@ -144,15 +166,17 @@ int main() {
     }};
     // clang-format on
 
-    auto meshData = objLoader::readObjElements("C:/Users/dokimacbookpro/Documents/Projects/OpenGLutorialOffline/testAsets/tommi.obj");
+    auto meshData = objLoader::readObjElements(
+        "C:/Users/dokimacbookpro/Documents/Projects/OpenGLutorialOffline/testAsets/tommi.obj");
 
     for (const auto& group : meshData.groupInfos) {
-        fmt::print("group name: {} with startOffset: {}, count: {}\n", group.name, group.startOffset, group.count);
+        fmt::print("group name: {} with startOffset: {}, count: {}\n", group.name,
+                   group.startOffset, group.count);
     }
 
     // buffers
-    auto createBufferAndVao = [](const std::vector<vertex3D>& vertices, const std::vector<int>& indices,
-                                 GLuint program) -> GLuint {
+    auto createBufferAndVao = [](const std::vector<vertex3D>& vertices,
+                                 const std::vector<int>& indices, GLuint program) -> GLuint {
         // in core profile, at least 1 vao is needed
         GLuint vao;
         glCreateVertexArrays(1, &vao);
@@ -164,16 +188,20 @@ int main() {
         glNamedBufferStorage(bufferObject, vertices.size() * sizeof(vertex3D), vertices.data(),
                              GL_MAP_WRITE_BIT | GL_DYNAMIC_STORAGE_BIT);
 
-        glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "position"), /*buffer index*/ 0);
-        glVertexArrayAttribFormat(vao, 0, glm::vec3::length(), GL_FLOAT, GL_FALSE, offsetof(vertex3D, position));
+        glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "aPosition"),
+                                   /*buffer index*/ 0);
+        glVertexArrayAttribFormat(vao, 0, glm::vec3::length(), GL_FLOAT, GL_FALSE,
+                                  offsetof(vertex3D, position));
         glEnableVertexArrayAttrib(vao, 0);
 
-        glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "normal"), /*buffs idx*/ 0);
-        glVertexArrayAttribFormat(vao, 1, glm::vec3::length(), GL_FLOAT, GL_FALSE, offsetof(vertex3D, normal));
+        glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "aNormal"), /*buffs idx*/ 0);
+        glVertexArrayAttribFormat(vao, 1, glm::vec3::length(), GL_FLOAT, GL_FALSE,
+                                  offsetof(vertex3D, normal));
         glEnableVertexArrayAttrib(vao, 1);
 
-        glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "texCoord"), /*buffs idx*/ 0);
-        glVertexArrayAttribFormat(vao, 2, glm::vec2::length(), GL_FLOAT, GL_FALSE, offsetof(vertex3D, texCoord));
+        glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "aTexCoord"), /*buffs idx*/ 0);
+        glVertexArrayAttribFormat(vao, 2, glm::vec2::length(), GL_FLOAT, GL_FALSE,
+                                  offsetof(vertex3D, texCoord));
         glEnableVertexArrayAttrib(vao, 2);
 
         // buffer to index mapping
@@ -184,8 +212,8 @@ int main() {
         if (indices.size() > 0) {
             GLuint elemementBufferObject;
             glCreateBuffers(1, &elemementBufferObject);
-            glNamedBufferStorage(elemementBufferObject, indices.size() * sizeof(GLuint), indices.data(),
-                                 GL_MAP_WRITE_BIT | GL_DYNAMIC_STORAGE_BIT);
+            glNamedBufferStorage(elemementBufferObject, indices.size() * sizeof(GLuint),
+                                 indices.data(), GL_MAP_WRITE_BIT | GL_DYNAMIC_STORAGE_BIT);
             glVertexArrayElementBuffer(vao, elemementBufferObject);
         }
         return vao;
@@ -213,7 +241,8 @@ int main() {
         glTextureParameteri(textureName, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
         glTextureStorage2D(textureName, 1, GL_RGB8, texWidth, texHeight);
-        glTextureSubImage2D(textureName, 0, 0, 0, texWidth, texHeight, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+        glTextureSubImage2D(textureName, 0, 0, 0, texWidth, texHeight, GL_RGB, GL_UNSIGNED_BYTE,
+                            pixels);
         glGenerateTextureMipmap(textureName);
 
         stbi_image_free(pixels);
@@ -236,7 +265,7 @@ int main() {
     glm::mat4 projection;
     glm::mat4 mvp;
 
-    projection = glm::perspective(glm::radians(45.0f), 1280.f / 640.f, 0.1f, 100.0f);
+    projection = glm::perspective(glm::radians(40.0f), 1280.f / 640.f, 0.1f, 100.0f);
 
     int mvpLocationVertex = glGetUniformLocation(vertexColourProgram, "MVP");
     int mvpLocationTexture = glGetUniformLocation(textureProgram, "MVP");
@@ -254,7 +283,8 @@ int main() {
         glBindVertexArray(backGroundVao);
         glUseProgram(vertexColourProgram);
 
-        glProgramUniformMatrix4fv(vertexColourProgram, mvpLocationVertex, 1, GL_FALSE, glm::value_ptr(ortho));
+        glProgramUniformMatrix4fv(vertexColourProgram, mvpLocationVertex, 1, GL_FALSE,
+                                  glm::value_ptr(ortho));
 
         glDrawArrays(GL_TRIANGLES, 0, backGroundVertices.size());
 
@@ -262,22 +292,30 @@ int main() {
         glBindVertexArray(meshVao);
         glUseProgram(textureProgram);
 
-        glm::mat4 view =
-            glm::lookAt(glm::vec3(std::sin(currentTime * 0.5f) * 3.f, 1.25f + ((std::sin(currentTime * 0.32f) + 1.0f) / 2.0f) * 0.3f,
-                                  std::cos(currentTime * 0.5f) * 3.f), // Camera is at (4,3,3), in World Space
-                        glm::vec3(0.f, 1.f, 0.f),                         // and looks at the origin
-                        glm::vec3(0.f, 1.f,  0.f)                           // Head is up (set to 0,-1,0 to look upside-down)
-            );
+        glm::mat4 view = glm::lookAt(
+            glm::vec3(std::sin(currentTime * 0.5f) * 2.5f,
+                      1.25f + ((std::sin(currentTime * 0.32f) + 1.0f) / 2.0f) * 0.3f,
+                      std::cos(currentTime * 0.5f) * 2.5f), // Camera is at (4,3,3), in World Space
+            glm::vec3(0.f, 1.f, 0.f),                       // and looks at the origin
+            glm::vec3(0.f, 1.f, 0.f) // Head is up (set to 0,-1,0 to look upside-down)
+        );
         mvp = projection * view * model;
-        glProgramUniformMatrix4fv(textureProgram, mvpLocationTexture, 1, GL_FALSE, glm::value_ptr(mvp));
+        glProgramUniformMatrix4fv(textureProgram, mvpLocationTexture, 1, GL_FALSE,
+                                  glm::value_ptr(mvp));
 
         glBindTextureUnit(0, bodyTextureName); // expensive!!!
-        glDrawElements(GL_TRIANGLES, groups[0].count, GL_UNSIGNED_INT, (void*)(sizeof(GLuint) * groups[0].startOffset));
-        glDrawElements(GL_TRIANGLES, groups[1].count, GL_UNSIGNED_INT, (void*)(sizeof(GLuint) * groups[1].startOffset));
-        glDrawElements(GL_TRIANGLES, groups[2].count, GL_UNSIGNED_INT, (void*)(sizeof(GLuint) * groups[2].startOffset));
+        glDrawElements(GL_TRIANGLES, groups[0].count, GL_UNSIGNED_INT,
+                       (void*)(sizeof(GLuint) * groups[0].startOffset));
+        glDrawElements(GL_TRIANGLES, groups[1].count, GL_UNSIGNED_INT,
+                       (void*)(sizeof(GLuint) * groups[1].startOffset));
+        glDrawElements(GL_TRIANGLES, groups[2].count, GL_UNSIGNED_INT,
+                       (void*)(sizeof(GLuint) * groups[2].startOffset));
+
         glBindTextureUnit(0, clothesTextureName); // expensive!!!
-        glDrawElements(GL_TRIANGLES, groups[3].count, GL_UNSIGNED_INT, (void*)(sizeof(GLuint) * groups[3].startOffset));
-        glDrawElements(GL_TRIANGLES, groups[4].count, GL_UNSIGNED_INT, (void*)(sizeof(GLuint) * groups[4].startOffset));
+        glDrawElements(GL_TRIANGLES, groups[3].count, GL_UNSIGNED_INT,
+                       (void*)(sizeof(GLuint) * groups[3].startOffset));
+        glDrawElements(GL_TRIANGLES, groups[4].count, GL_UNSIGNED_INT,
+                       (void*)(sizeof(GLuint) * groups[4].startOffset));
 
         glfwSwapBuffers(window);
         glfwPollEvents();

@@ -39,7 +39,7 @@ int main() {
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
 
         /* Create a windowed mode window and its OpenGL context */
-        auto window = glfwCreateWindow(1920, 960, "Chapter 11 - Shader Transforms", nullptr, nullptr);
+        auto window = glfwCreateWindow(1920, 960, "Chapter 13 - Element Buffers", nullptr, nullptr);
 
         if (!window) {
             fmt::print("window doesn't exist\n");

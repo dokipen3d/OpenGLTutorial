@@ -43,7 +43,7 @@ int main() {
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
 
         /* Create a windowed mode window and its OpenGL context */
-        auto windowPtr = glfwCreateWindow(w, h, "Chapter 10 - Loading Data from Disk", nullptr, nullptr);
+        auto windowPtr = glfwCreateWindow(w, h, "Chapter 11 - Loading Data from Disk", nullptr, nullptr);
 
         if (!windowPtr) {
             fmt::print("window doesn't exist\n");

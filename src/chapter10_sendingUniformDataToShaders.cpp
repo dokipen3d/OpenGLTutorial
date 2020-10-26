@@ -37,7 +37,7 @@ int main() {
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
 
         /* Create a windowed mode window and its OpenGL context */
-        auto windowPtr = glfwCreateWindow(w, h, "Chapter 9 - Full Screen Effects (Diy Shadertoy!)",
+        auto windowPtr = glfwCreateWindow(w, h, "Chapter 10 - Sending Uniform Paramters to Shaders",
                                        nullptr, nullptr);
 
         if (!windowPtr) {
