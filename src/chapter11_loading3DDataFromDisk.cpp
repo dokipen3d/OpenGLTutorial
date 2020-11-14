@@ -89,7 +89,6 @@ int main() {
             #version 460 core
             layout (location = 0) in vec3 position;
             layout (location = 1) in vec3 normal;
-            layout (location = 2) in vec2 texCoord;
 
             out vec3 vertex_colour;
 
@@ -152,10 +151,6 @@ int main() {
         glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "normal"), /*buffs idx*/ 0);
         glVertexArrayAttribFormat(vao, 1, glm::vec3::length(), GL_FLOAT, GL_FALSE, offsetof(vertex3D, normal));
         glEnableVertexArrayAttrib(vao, 1);
-
-        glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "texCoord"), /*buffs idx*/ 0);
-        glVertexArrayAttribFormat(vao, 2, glm::vec2::length(), GL_FLOAT, GL_FALSE, offsetof(vertex3D, texCoord));
-        glEnableVertexArrayAttrib(vao, 2);
 
         // buffer to index mapping
         glVertexArrayVertexBuffer(vao, 0, bufferObject, /*offset*/ 0,

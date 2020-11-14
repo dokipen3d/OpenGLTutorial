@@ -15,7 +15,6 @@
 
 #include <glbinding/gl/gl.h>
 #include <glbinding/glbinding.h>
-
 #include <glbinding-aux/debug.h>
 
 using namespace gl;
@@ -51,13 +50,11 @@ int main() {
 
     glEnable(GL_DEBUG_OUTPUT);
     glDebugMessageCallback(errorHandler::MessageCallback, 0);
-    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS); // useful for debugging as error
-                                           // will occur as we step through
-    // glbinding::aux::enableGetErrorCallback();
+    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 
-    const char* vertexShaderSource = R"VERTEX(
+    const char* vertexShaderSource = R"(
         #version 460 core
-        out vec3 colour;
+        out vec4 colour;
 
         const vec4 vertices[] = vec4[]( vec4(-0.5f, -0.7f,    0.0, 1.0), 
                                         vec4( 0.5f, -0.7f,    0.0, 1.0),    
@@ -71,18 +68,18 @@ int main() {
             colour = colours[gl_VertexID];
             gl_Position = vertices[gl_VertexID];  
         }
-    )VERTEX";
+    )";
 
-    const char* fragmentShaderSource = R"FRAGMENT(
+    const char* fragmentShaderSource = R"(
         #version 460 core
 
         in vec3 colour;
         out vec4 finalColor;
 
         void main() {
-            finalColor = vec4(colour.x, colour.y, colour.z, 1.0);
+            finalColor = vec4(colour, 1.0);
         }
-    )FRAGMENT";
+    )";
 
     auto vertexShader = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vertexShader, 1, &vertexShaderSource, nullptr);
@@ -92,7 +89,7 @@ int main() {
     auto fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(fragmentShader, 1, &fragmentShaderSource, nullptr);
     glCompileShader(fragmentShader);
-    errorHandler::checkShader(fragmentShader, "Fragment");
+    //errorHandler::checkShader(fragmentShader, "Fragment");
 
     auto program = glCreateProgram();
     glAttachShader(program, vertexShader);

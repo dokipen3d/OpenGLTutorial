@@ -63,10 +63,10 @@ int main() {
             #version 460 core
             layout (location = 0) in vec2 position;
 
-            out vec3 vertex_colour;
+            out vec3 colour;
 
             void main(){
-                vertex_colour = vec3(1.0f, 0.0f, 0.0f);
+                colour = vec3(1.0f, 0.0f, 0.0f);
                 gl_Position = vec4(position, 0.0f, 1.0f);
             }
         )";
@@ -74,14 +74,11 @@ int main() {
         const char* fragmentShaderSource = R"(
             #version 460 core
 
-            in vec3 vertex_colour;
+            in vec3 colour;
             out vec4 finalColor;
 
             void main() {
-                finalColor = vec4(  vertex_colour.x,
-                                    vertex_colour.y,
-                                    vertex_colour.z,
-                                    1.0);
+                finalColor = vec4(colour, 1.0);
             }
         )";
 

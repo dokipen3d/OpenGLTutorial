@@ -28,8 +28,8 @@ int main() {
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
 
-        auto windowPtr =
-            glfwCreateWindow(1280, 720, "Chapter 3 - Hello Triangle", nullptr, nullptr);
+        auto windowPtr = glfwCreateWindow(
+            1280, 720, "Chapter 3 - Hello Triangle", nullptr, nullptr);
 
         if (!windowPtr) {
             fmt::print("window doesn't exist\n");
@@ -47,7 +47,7 @@ int main() {
         #version 460 core
         out vec3 colour;
 
-        const vec4 vertices[] = vec4[]( vec4(-0.5f, -0.7f,    0.0, 1.0), 
+        const vec4 vertices[] = vec4[]( vec4(-0.5f, -0.7f,    0.0, 1.0),
                                         vec4( 0.5f, -0.7f,    0.0, 1.0),    
                                         vec4( 0.0f,  0.6888f, 0.0, 1.0));   
 
@@ -68,7 +68,7 @@ int main() {
         out vec4 finalColor;
 
         void main() {
-            finalColor = vec4(colour.x, colour.y, colour.z, 1.0);
+            finalColor = vec4(colour, 1.0);
         }
     )";
 
@@ -96,9 +96,10 @@ int main() {
 
     while (!glfwWindowShouldClose(windowPtr)) {
 
-        auto currentTime = duration<float>(system_clock::now() - startTime).count();
-        clearColour = {std::sin(currentTime) * 0.5f + 0.5f, std::cos(currentTime) * 0.5f + 0.5f,
-                       0.2f, 1.0f};
+        auto currentTime =
+            duration<float>(system_clock::now() - startTime).count();
+        clearColour = {std::sin(currentTime) * 0.5f + 0.5f,
+                       std::cos(currentTime) * 0.5f + 0.5f, 0.2f, 1.0f};
 
         glClearBufferfv(GL_COLOR, 0, clearColour.data());
 

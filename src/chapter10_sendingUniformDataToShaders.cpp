@@ -24,8 +24,8 @@ using namespace std::chrono;
 int main() {
 
     auto startTime = system_clock::now();
-    const int width = 1280;
-    const int height = 720;
+    const int width = 1920;
+    const int height = 1080;
 
     auto windowPtr = [](int w, int h) {
         if (!glfwInit()) {

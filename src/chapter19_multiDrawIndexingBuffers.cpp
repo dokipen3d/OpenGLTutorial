@@ -163,9 +163,9 @@ int main() {
     // clang-format off
     const std::vector<vertex3D> backGroundVertices {{
         //   position   |           normal        |  texCoord
-        {{-1.f, -1.f, 0.999999f},  {0.12f, 0.14f, 0.16f}, {0.f, 0.f}},
-        {{ 3.f, -1.f, 0.999999f},  {0.12f, 0.14f, 0.16f}, {3.f, 0.f}},
-        {{-1.f,  3.f, 0.999999f},  {0.80f, 0.80f, 0.82f}, {0.f, 3.f}}
+        {{-1.f, -1.f, 0.999999f},  {0.10f, 0.15f, 0.14f}, {0.f, 0.f}},
+        {{ 3.f, -1.f, 0.999999f},  {0.10f, 0.15f, 0.14f}, {3.f, 0.f}},
+        {{-1.f,  3.f, 0.999999f},  {0.80f, 0.82f, 0.80f}, {0.f, 3.f}}
     }};
     // clang-format on
 

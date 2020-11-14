@@ -119,14 +119,15 @@ struct MaterialInfo {
     std::unordered_map<mapType, std::string> mapTypeToFilePath;
 };
 
-// return mapMaterialNameToInfo
-std::unordered_map<std::string, MaterialInfo> parseMaterialFile(const std::string filePath) {
+using MapMaterialNameToInfo = std::unordered_map<std::string, MaterialInfo>;
+
+MapMaterialNameToInfo parseMaterialFile(const std::string filePath) {
 
     std::ios_base::sync_with_stdio(false);
     using namespace std::chrono;
     auto startTime = system_clock::now();
 
-    std::unordered_map<std::string, MaterialInfo> mapMaterialNameToInfo;
+    MapMaterialNameToInfo mapMaterialNameToInfo;
 
     char line[128];
     size_t line_buf_size = 0;
@@ -242,11 +243,9 @@ std::unordered_map<std::string, MaterialInfo> parseMaterialFile(const std::strin
         default: {
         }
         }
-
     }
     mapMaterialNameToInfo.insert({currentName, currentMaterial});
     mapMaterialNameToInfo.erase("");
-
 
     return mapMaterialNameToInfo;
 };
@@ -295,7 +294,14 @@ RawMeshData readObjRaw(const std::string& filePath, const std::string& materialF
     auto startTime = system_clock::now();
 
     fmt::print(stderr, "reading materialFile\n");
-    auto materialMap = parseMaterialFile(materialFilePath);
+
+    auto materialMap = [&]() -> MapMaterialNameToInfo {
+        if (!materialFilePath.empty()) {
+            return parseMaterialFile(materialFilePath);
+        }
+        return {};
+    }();
+
     for (auto& e : materialMap) {
         auto matInfo = e.second;
 
@@ -335,7 +341,6 @@ RawMeshData readObjRaw(const std::string& filePath, const std::string& materialF
     uint16_t key;
 
     while (fgets(line, 128, fp)) {
-
         { // setup
             line_size = strlen(line);
             spacePositions.clear();
