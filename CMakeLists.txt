@@ -26,7 +26,6 @@ find_package(glfw3 CONFIG REQUIRED)
 find_package(glm REQUIRED)
 find_package(fmt CONFIG REQUIRED)
 find_package(tinyobjloader CONFIG REQUIRED)
-find_package(OpenMP)
 
 # takes the files in the src directory and adds them to a variable called SRC_LIST
 aux_source_directory(src/ SRC_LIST)
@@ -62,11 +61,14 @@ set_property(GLOBAL PROPERTY CXX_STANDARD 11)
 set(LIBRARIES fmt::fmt
     fmt::fmt-header-only
     glfw
-    ${OPENGL_LIBRARIES}
+    ${OpenGL_LIBRARIES}
     glbinding::glbinding
     glbinding::glbinding-aux
     ${STB_INCLUDE_DIRS}
     )
+
+
+    
 # which libraries our program must link against
 target_link_libraries(chapter1_HelloWorld PRIVATE ${LIBRARIES})
 target_link_libraries(chapter2_windowCreation PRIVATE ${LIBRARIES})
@@ -79,16 +81,16 @@ target_link_libraries(chapter8_multipleVAOs PRIVATE ${LIBRARIES})
 target_link_libraries(chapter9_fullScreenEffectsShaderToy PRIVATE ${LIBRARIES})
 target_link_libraries(chapter9_fullScreenEffectsShaderToy PRIVATE ${LIBRARIES})
 target_link_libraries(chapter10_sendingUniformDataToShaders PRIVATE ${LIBRARIES})
-target_link_libraries(chapter11_loading3DDataFromDisk PRIVATE ${LIBRARIES} PUBLIC OpenMP::OpenMP_CXX)
-target_link_libraries(chapter12_shaderTransforms PRIVATE ${LIBRARIES} PUBLIC OpenMP::OpenMP_CXX)
-target_link_libraries(chapter13_elementBuffers PRIVATE ${LIBRARIES} PUBLIC OpenMP::OpenMP_CXX)
-target_link_libraries(chapter14_textures PRIVATE ${LIBRARIES} PUBLIC OpenMP::OpenMP_CXX)
-target_link_libraries(chapter15_basicDiffuseLighting PRIVATE ${LIBRARIES} PUBLIC OpenMP::OpenMP_CXX)
-target_link_libraries(chapter16_multipleTextures PRIVATE ${LIBRARIES} PUBLIC OpenMP::OpenMP_CXX)
-target_link_libraries(chapter17_textureArrays PRIVATE ${LIBRARIES} PUBLIC OpenMP::OpenMP_CXX)
-target_link_libraries(chapter18_drawIndirect PRIVATE ${LIBRARIES} PUBLIC OpenMP::OpenMP_CXX)
-target_link_libraries(chapter19_multiDrawIndexingBuffers PRIVATE ${LIBRARIES} PUBLIC OpenMP::OpenMP_CXX)
+target_link_libraries(chapter11_loading3DDataFromDisk PRIVATE ${LIBRARIES} )
+target_link_libraries(chapter12_shaderTransforms PRIVATE ${LIBRARIES} )
+target_link_libraries(chapter13_elementBuffers PRIVATE ${LIBRARIES} )
+target_link_libraries(chapter14_textures PRIVATE ${LIBRARIES} )
+target_link_libraries(chapter15_basicDiffuseLighting PRIVATE ${LIBRARIES} )
+target_link_libraries(chapter16_multipleTextures PRIVATE ${LIBRARIES} )
+target_link_libraries(chapter17_textureArrays PRIVATE ${LIBRARIES} )
+target_link_libraries(chapter18_drawIndirect PRIVATE ${LIBRARIES} )
+target_link_libraries(chapter19_multiDrawIndexingBuffers PRIVATE ${LIBRARIES} )
 
-target_link_libraries(testObj PRIVATE ${LIBRARIES} PUBLIC OpenMP::OpenMP_CXX)
+target_link_libraries(testObj PRIVATE ${LIBRARIES})
 
 

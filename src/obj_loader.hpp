@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <numeric>
+#include <atomic>
 
 //#include "ska_sort.hpp"
 //#include <boost/sort/sort.hpp>
@@ -20,11 +21,13 @@
 
 #include <fstream>
 //#include <iostream>
-#include <omp.h>
+//#include <omp.h>
 //#include <pystring.h>
 //#include <sstream>
 #include <string>
+#include <map>
 #include <unordered_map>
+
 #include <vector>
 struct vertex3D {
     glm::vec3 position;
@@ -45,7 +48,7 @@ inline bool operator<(const glm::ivec3& a, const glm::ivec3& b) {
 
 template <> struct less<glm::ivec3> {
     bool operator()(const glm::ivec3& a, const glm::ivec3& b) {
-        return a < b;
+        return a.x < b.x || (a.x == b.x && (a.y < b.y || (a.y == b.y && a.z < b.z)));
     }
 };
 
@@ -116,7 +119,7 @@ struct MaterialInfo {
 
     enum class mapType { Diffuse, Normal, Specular };
 
-    std::unordered_map<mapType, std::string> mapTypeToFilePath;
+    std::map<mapType, std::string> mapTypeToFilePath;
 };
 
 using MapMaterialNameToInfo = std::unordered_map<std::string, MaterialInfo>;
@@ -486,7 +489,7 @@ MeshDataSplit readObjSplit(const std::string& filePath) {
         rawMeshData.normals.resize(rawMeshData.faceIndices.size());
     }
 
-#pragma omp parallel for
+//#pragma omp parallel for
     for (int i = 0u; i < rawMeshData.faceIndices.size(); ++i) {
         meshData.vertices[i] = {rawMeshData.positions[rawMeshData.faceIndices[i].x],
                                 rawMeshData.normals[rawMeshData.faceIndices[i].z],
@@ -531,8 +534,8 @@ MeshDataElements readObjElements(const std::string& filePath) {
 
     fmt::print(stderr, "unique point count is {}\n", count);
 
-    std::atomic<int> k = 0;
-#pragma omp parallel for
+    std::atomic<int> k{0};
+//#pragma omp parallel for
     for (auto i = 1ll; i <= count; ++i) {
 
         meshData.vertices[i - 1] = {

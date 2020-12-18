@@ -26,7 +26,7 @@ int main() {
         }
 
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
 
         auto windowPtr = glfwCreateWindow(
             1280, 720, "Chapter 3 - Hello Triangle", nullptr, nullptr);
@@ -44,7 +44,7 @@ int main() {
     }();
 
     const char* vertexShaderSource = R"(
-        #version 460 core
+        #version 450 core
         out vec3 colour;
 
         const vec4 vertices[] = vec4[]( vec4(-0.5f, -0.7f,    0.0, 1.0),
@@ -62,7 +62,7 @@ int main() {
     )";
 
     const char* fragmentShaderSource = R"(
-        #version 460 core
+        #version 450 core
 
         in vec3 colour;
         out vec4 finalColor;

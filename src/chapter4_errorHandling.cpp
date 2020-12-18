@@ -4,7 +4,6 @@
 #include <cmath>      // sin & cos
 #include <cstdlib>    // for std::exit()
 #include <fmt/core.h> // for fmt::print(). implements c++20 std::format
-#include <pystring.h>
 #include <string>
 #include <unordered_map>
 
@@ -31,7 +30,7 @@ int main() {
         }
 
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
 
         auto windowPtr =
             glfwCreateWindow(1280, 720, "Chapter 4 - Error Handling", nullptr, nullptr);
@@ -53,7 +52,7 @@ int main() {
     glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 
     const char* vertexShaderSource = R"(
-        #version 460 core
+        #version 450 core
         out vec4 colour;
 
         const vec4 vertices[] = vec4[]( vec4(-0.5f, -0.7f,    0.0, 1.0), 
@@ -71,7 +70,7 @@ int main() {
     )";
 
     const char* fragmentShaderSource = R"(
-        #version 460 core
+        #version 450 core
 
         in vec3 colour;
         out vec4 finalColor;

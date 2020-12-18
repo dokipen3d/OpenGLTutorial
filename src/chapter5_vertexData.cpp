@@ -4,7 +4,6 @@
 #include <cmath>      // sin & cos
 #include <cstdlib>    // for std::exit()
 #include <fmt/core.h> // for fmt::print(). implements c++20 std::format
-#include <pystring.h>
 #include <unordered_map>
 
 // this is really important to make sure that glbindings does not clash with
@@ -33,7 +32,7 @@ int main() {
         }
 
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
 
         auto windowPtr = glfwCreateWindow(1280, 720, "Chapter 5 - Vertex Data", nullptr, nullptr);
 

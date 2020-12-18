@@ -4,7 +4,6 @@
 #include <cmath>      // sin & cos
 #include <cstdlib>    // for std::exit()
 #include <fmt/core.h> // for fmt::print(). implements c++20 std::format
-#include <pystring.h>
 #include <unordered_map>
 
 // this is really important to make sure that glbindings does not clash with
@@ -33,7 +32,7 @@ int main() {
         }
 
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
 
         auto windowPtr =
             glfwCreateWindow(1280, 720, "Chapter 7 - Interleaving Vertex Data", nullptr, nullptr);
@@ -61,7 +60,7 @@ int main() {
 
     auto program = []() -> GLuint {
         const char* vertexShaderSource = R"(
-            #version 460 core
+            #version 450 core
             layout (location = 0) in vec2 position;
             layout (location = 1) in vec3 colours;
 
@@ -74,7 +73,7 @@ int main() {
         )";
 
         const char* fragmentShaderSource = R"(
-            #version 460 core
+            #version 450 core
 
             in vec3 vertex_colour;
             out vec4 finalColor;

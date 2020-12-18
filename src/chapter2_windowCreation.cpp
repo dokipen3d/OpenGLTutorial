@@ -25,9 +25,13 @@ int main() {
             fmt::print("glfw didnt initialize!\n");
             std::exit(EXIT_FAILURE);
         }
-
+        
+        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, 1);
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
+
+
 
         auto windowPtr = glfwCreateWindow(
             1600, 900, "Chapter 2 - Window Creation", nullptr, nullptr);

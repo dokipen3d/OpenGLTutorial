@@ -4,12 +4,12 @@
 
 #include <glbinding/gl/gl.h>
 #include <string>
-#include <unordered_map>
+#include <map>
 using namespace gl;
 
 namespace errorHandler {
 
-static const std::unordered_map<GLenum, std::string> errorSourceMap{
+static const std::map<GLenum, std::string> errorSourceMap{
     {GL_DEBUG_SOURCE_API, "SOURCE_API"},
     {GL_DEBUG_SOURCE_WINDOW_SYSTEM, "WINDOW_SYSTEM"},
     {GL_DEBUG_SOURCE_SHADER_COMPILER, "SHADER_COMPILER"},
@@ -17,7 +17,7 @@ static const std::unordered_map<GLenum, std::string> errorSourceMap{
     {GL_DEBUG_SOURCE_APPLICATION, "APPLICATION"},
     {GL_DEBUG_SOURCE_OTHER, "OTHER"}};
 
-static const std::unordered_map<GLenum, std::string> errorTypeMap{
+static const std::map<GLenum, std::string> errorTypeMap{
     {GL_DEBUG_TYPE_ERROR, "ERROR"},
     {GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR, "DEPRECATED_BEHAVIOR"},
     {GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR, "UNDEFINED_BEHAVIOR"},
@@ -26,7 +26,7 @@ static const std::unordered_map<GLenum, std::string> errorTypeMap{
     {GL_DEBUG_TYPE_OTHER, "OTHER"},
     {GL_DEBUG_TYPE_MARKER, "MARKER"}};
 
-static const std::unordered_map<GLenum, std::string> severityMap{
+static const std::map<GLenum, std::string> severityMap{
     {GL_DEBUG_SEVERITY_HIGH, "HIGH"},
     {GL_DEBUG_SEVERITY_MEDIUM, "MEDIUM"},
     {GL_DEBUG_SEVERITY_LOW, "LOW"},

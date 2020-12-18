@@ -32,7 +32,7 @@ int main() {
         }
 
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
 
         auto windowPtr = glfwCreateWindow(1280, 720, "Chapter 8 - Multiple Vertex Array Objects", nullptr, nullptr);
 
