@@ -24,8 +24,8 @@ using namespace std::chrono;
 int main() {
 
     auto startTime = system_clock::now();
-    const int width = 1920;
-    const int height = 1080;
+    const int width = 1280;
+    const int height = 720;
 
     auto windowPtr = [](int w, int h) {
         if (!glfwInit()) {
@@ -34,7 +34,7 @@ int main() {
         }
 
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
 
         /* Create a windowed mode window and its OpenGL context */
         auto windowPtr = glfwCreateWindow(w, h, "Chapter 10 - Sending Uniform Paramters to Shaders",

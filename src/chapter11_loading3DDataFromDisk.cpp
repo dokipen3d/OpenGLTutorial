@@ -40,7 +40,7 @@ int main() {
         }
 
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
 
         /* Create a windowed mode window and its OpenGL context */
         auto windowPtr = glfwCreateWindow(w, h, "Chapter 11 - Loading Data from Disk", nullptr, nullptr);
@@ -86,7 +86,7 @@ int main() {
     };
 
     const char* vertexShaderSource = R"(
-            #version 460 core
+            #version 450 core
             layout (location = 0) in vec3 position;
             layout (location = 1) in vec3 normal;
 
@@ -105,7 +105,7 @@ int main() {
         )";
 
     const char* fragmentShaderSource = R"(
-            #version 460 core
+            #version 450 core
 
             in vec3 vertex_colour;
             out vec4 finalColor;

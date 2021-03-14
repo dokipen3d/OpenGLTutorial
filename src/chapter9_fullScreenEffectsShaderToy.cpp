@@ -82,7 +82,7 @@ int main() {
     };
 
     auto program = createProgram(R"(
-        #version 460 core
+        #version 450 core
         layout (location = 0) in vec2 position;
         layout (location = 1) in vec2 colours;
 
@@ -94,7 +94,7 @@ int main() {
         }
     )",
                                  R"(
-        #version 460 core
+        #version 450 core
 
         // The MIT License
         // Copyright © 2013 Inigo Quilez
