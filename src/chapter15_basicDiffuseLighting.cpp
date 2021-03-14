@@ -39,11 +39,11 @@ int main() {
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
 
         /* Create a windowed mode window and its OpenGL context */
         auto window =
-            glfwCreateWindow(1920, 960, "Chapter 15 - Basic Diffuse Lighting", nullptr, nullptr);
+            glfwCreateWindow(1280, 720, "Chapter 15 - Basic Diffuse Lighting", nullptr, nullptr);
 
         if (!window) {
             fmt::print("window doesn't exist\n");
@@ -88,7 +88,7 @@ int main() {
     };
 
     const char* vertexShaderSource = R"(
-            #version 460 core
+            #version 450 core
             layout (location = 0) in vec3 aPosition;
             layout (location = 1) in vec3 aNormal;
             layout (location = 2) in vec2 aTexCoord;
@@ -110,10 +110,9 @@ int main() {
 
     // for bg
     const char* fragmentShaderSourceColour = R"(
-            #version 460 core
+            #version 450 core
 
             layout (location = 0) in vec3 normal;
-            layout (location = 1) in vec2 uv;
 
             out vec4 finalColor;
 
@@ -124,7 +123,7 @@ int main() {
 
     // for texturing models
     const char* fragmentShaderSourceTexture = R"(
-            #version 460 core
+            #version 450 core
 
             layout (location = 0) in vec3 normal;
             layout (location = 1) in vec2 uv;
@@ -167,7 +166,8 @@ int main() {
 
     // buffers
     auto createBufferAndVao = [](const std::vector<vertex3D>& vertices,
-                                 const std::vector<int>& indices, GLuint program) -> GLuint {
+                                 const std::vector<int>& indices, GLuint program,
+                                 bool enableTexCoord = true) -> GLuint {
         // in core profile, at least 1 vao is needed
         GLuint vao;
         glCreateVertexArrays(1, &vao);
@@ -190,10 +190,12 @@ int main() {
                                   offsetof(vertex3D, normal));
         glEnableVertexArrayAttrib(vao, 1);
 
-        glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "aTexCoord"), /*buffs idx*/ 0);
-        glVertexArrayAttribFormat(vao, 2, glm::vec2::length(), GL_FLOAT, GL_FALSE,
-                                  offsetof(vertex3D, texCoord));
-        glEnableVertexArrayAttrib(vao, 2);
+        if(enableTexCoord){
+            glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "aTexCoord"), /*buffs idx*/ 0);
+            glVertexArrayAttribFormat(vao, 2, glm::vec2::length(), GL_FLOAT, GL_FALSE,
+                                    offsetof(vertex3D, texCoord));
+            glEnableVertexArrayAttrib(vao, 2);
+        }
 
         // buffer to index mapping
         glVertexArrayVertexBuffer(vao, 0, bufferObject, /*offset*/ 0,
@@ -210,7 +212,7 @@ int main() {
         return vao;
     };
 
-    auto backGroundVao = createBufferAndVao(backGroundVertices, {}, vertexColourProgram);
+    auto backGroundVao = createBufferAndVao(backGroundVertices, {}, vertexColourProgram, false);
     auto meshVao = createBufferAndVao(meshData.vertices, meshData.indices, textureProgram);
 
     // texture
@@ -250,7 +252,7 @@ int main() {
     glm::mat4 projection;
     glm::mat4 mvp;
 
-    projection = glm::perspective(glm::radians(65.0f), 1280.f / 640.f, 0.1f, 100.0f);
+    projection = glm::perspective(glm::radians(65.0f), 1280.f / 720.f, 0.1f, 100.0f);
 
     int mvpLocationVertex = glGetUniformLocation(vertexColourProgram, "MVP");
     int mvpLocationTexture = glGetUniformLocation(textureProgram, "MVP");
