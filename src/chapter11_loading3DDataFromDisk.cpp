@@ -177,11 +177,11 @@ int main() {
 
         glBindVertexArray(backGroundVao);
         glProgramUniform1f(program, remapUniformLocation, 0);
-        glDrawArrays(GL_TRIANGLES, 0, backGroundVertices.size());
+        glDrawArrays(GL_TRIANGLES, 0, (gl::GLsizei)backGroundVertices.size());
 
         glBindVertexArray(meshVao);
         glProgramUniform1f(program, remapUniformLocation, 1);
-        glDrawArrays(GL_TRIANGLES, 0, meshData.vertices.size());
+        glDrawArrays(GL_TRIANGLES, 0, (gl::GLsizei)meshData.vertices.size());
 
         glfwSwapBuffers(windowPtr);
         glfwPollEvents();

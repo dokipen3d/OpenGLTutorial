@@ -364,7 +364,7 @@ RawMeshData readObjRaw(const std::string& filePath, const std::string& materialF
                 }
             }
             // signify end of line
-            spacePositions.push_back(line_size);
+            spacePositions.push_back(static_cast<int>(line_size));
         }
 
         switch (key) {
@@ -546,11 +546,11 @@ MeshDataElements readObjElements(const std::string& filePath) {
 
         // all the indices that reference this vertex
         for (auto j = trackingUniqueIds[i - 1]; j < trackingUniqueIds[i]; ++j, k++) {
-            meshData.indices[trackingIds[j]] = i - 1;
+            meshData.indices[trackingIds[j]] = static_cast<int>(i - 1);
         }
     }
     for (auto j = trackingUniqueIds[count - 1]; j < rawMeshData.faceIndices.size(); ++j) {
-        meshData.indices[trackingIds[j]] = count - 1;
+        meshData.indices[trackingIds[j]] = static_cast<int>(count - 1);
     }
 
     auto timeTaken = duration<float>(system_clock::now() - startTime).count();

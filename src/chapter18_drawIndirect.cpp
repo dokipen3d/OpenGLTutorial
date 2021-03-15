@@ -234,7 +234,7 @@ int main() {
         const int hardCodedResolution = 1024;
         // can have possibly 2048+ texture slices (have to be same format)
         glTextureStorage3D(textureName, 1, GL_RGB8, hardCodedResolution, hardCodedResolution,
-                           filePaths.size());
+                           (gl::GLsizei)filePaths.size());
 
         // loop through all textures and put into a slice of the array
         for (auto i = 0u; i < filePaths.size(); ++i) {
@@ -272,7 +272,6 @@ int main() {
 
     glm::mat4 model = glm::mat4(1.0f);
 
-    glm::mat4 view;
     glm::mat4 ortho = glm::ortho(-1.f, 1.f, -1.f, 1.f, 1.f, -1.f);
     glm::mat4 projection;
     glm::mat4 mvp;
@@ -335,7 +334,7 @@ int main() {
         glProgramUniformMatrix4fv(vertexColourProgram, mvpLocationVertex, 1, GL_FALSE,
                                   glm::value_ptr(ortho));
 
-        glDrawArrays(GL_TRIANGLES, 0, backGroundVertices.size());
+        glDrawArrays(GL_TRIANGLES, 0, (gl::GLsizei)backGroundVertices.size());
 
         // mesh
         glBindVertexArray(meshVao);
@@ -357,14 +356,14 @@ int main() {
 
         //right before call bind buffer
         glBindBuffer(GL_DRAW_INDIRECT_BUFFER, bodyCommands);
-        glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, nullptr, bodyDraws.size(), 0);
+        glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, nullptr, (gl::GLsizei)bodyDraws.size(), 0);
 
         // much cheaper than binding texture
         glProgramUniform1i(textureProgram, textureSliceLocation, 1);
 
         //right before call bind buffer
         glBindBuffer(GL_DRAW_INDIRECT_BUFFER, clothesCommands);
-        glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, nullptr, clothesDraws.size(), 0);
+        glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, nullptr, (gl::GLsizei)clothesDraws.size(), 0);
 
         glfwSwapBuffers(window);
         glfwPollEvents();

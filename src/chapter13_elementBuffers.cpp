@@ -173,7 +173,6 @@ int main() {
 
     glm::mat4 model = glm::mat4(1.0f);
 
-    glm::mat4 view;
     glm::mat4 ortho = glm::ortho(-1.f, 1.f, -1.f, 1.f, 1.f, -1.f);
     glm::mat4 projection;
 
@@ -196,7 +195,7 @@ int main() {
         glBindVertexArray(backGroundVao);
         glProgramUniformMatrix4fv(program, mvpLocation, 1, GL_FALSE, glm::value_ptr(ortho));
         glProgramUniform1f(program, remapUniformLocation, 0);
-        glDrawArrays(GL_TRIANGLES, 0, backGroundVertices.size());
+        glDrawArrays(GL_TRIANGLES, 0, (gl::GLsizei)backGroundVertices.size());
 
         // mesh
         glBindVertexArray(meshVao);
@@ -212,7 +211,7 @@ int main() {
         glProgramUniformMatrix4fv(program, mvpLocation, 1, GL_FALSE, glm::value_ptr(mvp));
         glProgramUniform1f(program, remapUniformLocation, 1);
 
-        glDrawElements(GL_TRIANGLES, meshData.indices.size(), GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, (gl::GLsizei)meshData.indices.size(), GL_UNSIGNED_INT, 0);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
