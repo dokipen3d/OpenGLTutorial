@@ -82,7 +82,7 @@ RawMeshData readObjRaw(const std::string& filePath) {
 
     char* end;
     uint16_t key;
-
+    int a, b, c, d, e, fi, gi, h, i;
     
 
     while (fgets(line, 128, fp)) {
@@ -99,8 +99,7 @@ RawMeshData readObjRaw(const std::string& filePath) {
                 spacePositions.push_back(i + 1);
             }
         }
-        // signify end of line
-        spacePositions.push_back(static_cast<int>(line_size));
+
 
         switch (key) {
 
@@ -128,35 +127,35 @@ RawMeshData readObjRaw(const std::string& filePath) {
         case f: {
             // is face
 
-            int a = std::strtol(&line[spacePositions[0]], &end, 10);
-            int b = std::strtol(end + (*end == '/'), &end, 10);
-            int c = std::strtol(end + (*end == '/'), &end, 10);
+            a = std::strtol(&line[spacePositions[0]], &end, 10);
+            b = std::strtol(end + (*end == '/'), &end, 10);
+            c = std::strtol(end + (*end == '/'), &end, 10);
             meshData.faceIndices.emplace_back(a, b, c);
 
-            int d = std::strtol(&line[spacePositions[1]], &end, 10);
-            int e = std::strtol(end + (*end == '/'), &end, 10);
-            int f = std::strtol(end + (*end == '/'), &end, 10);
+            d = std::strtol(&line[spacePositions[1]], &end, 10);
+            e = std::strtol(end + (*end == '/'), &end, 10);
+            fi = std::strtol(end + (*end == '/'), &end, 10);
 
-            meshData.faceIndices.emplace_back(d, e, f);
+            meshData.faceIndices.emplace_back(d, e, fi);
 
-            int g = std::strtol(&line[spacePositions[2]], &end, 10);
-            int h = std::strtol(end + (*end == '/'), &end, 10);
-            int i = std::strtol(end + (*end == '/'), &end, 10);
+            gi = std::strtol(&line[spacePositions[2]], &end, 10);
+            h = std::strtol(end + (*end == '/'), &end, 10);
+            i = std::strtol(end + (*end == '/'), &end, 10);
 
-            meshData.faceIndices.emplace_back(g, h, i);
+            meshData.faceIndices.emplace_back(gi, h, i);
 
             if (spacePositions.size() == 5) {
                 // face 0
                 meshData.faceIndices.emplace_back(a, b, c);
                 // face 2
-                meshData.faceIndices.emplace_back(g, h, i);
+                meshData.faceIndices.emplace_back(gi, h, i);
 
                 // reuse def as those temps aren't needed
                 d = std::strtol(&line[spacePositions[3]], &end, 10);
                 e = std::strtol(end + (*end == '/'), &end, 10);
-                f = std::strtol(end + (*end == '/'), &end, 10);
+                fi = std::strtol(end + (*end == '/'), &end, 10);
 
-                meshData.faceIndices.emplace_back(d, e, f);
+                meshData.faceIndices.emplace_back(d, e, fi);
             }
 
             break;

@@ -1,5 +1,5 @@
 #include "error_handling.hpp"
-#include "obj_loader.hpp"
+#include "obj_loader_simple_split.hpp"
 
 #include <array>
 #include <chrono>     // current time
