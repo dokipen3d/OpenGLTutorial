@@ -1,5 +1,5 @@
 #include "error_handling.hpp"
-#include "obj_loader.hpp"
+#include "obj_loader_element_cpp.hpp"
 
 #include <array>
 #include <chrono>     // current time
@@ -28,7 +28,10 @@ int main() {
 
     auto startTime = system_clock::now();
 
-    auto window = []() {
+    const int width = 1600;
+    const int height = 900;
+
+    auto windowPtr = [&]() {
         if (!glfwInit()) {
             fmt::print("glfw didnt initialize!\n");
             std::exit(EXIT_FAILURE);
@@ -36,22 +39,23 @@ int main() {
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
 
         /* Create a windowed mode window and its OpenGL context */
-        auto window = glfwCreateWindow(1920, 960, "Chapter 13 - Element Buffers", nullptr, nullptr);
+        auto windowPtr = glfwCreateWindow(
+            width, height, "Chapter 12 - Shader Transforms", nullptr, nullptr);
 
-        if (!window) {
+        if (!windowPtr) {
             fmt::print("window doesn't exist\n");
             glfwTerminate();
             std::exit(EXIT_FAILURE);
         }
 
-        glfwMakeContextCurrent(window);
-        glfwSwapInterval(0);
+        glfwSetWindowPos(windowPtr, 160, 90);
+        glfwMakeContextCurrent(windowPtr);
 
         glbinding::initialize(glfwGetProcAddress, false);
-        return window;
+        return windowPtr;
     }();
 
     // debugging
@@ -59,42 +63,13 @@ int main() {
         glEnable(GL_DEBUG_OUTPUT);
         glDebugMessageCallback(errorHandler::MessageCallback, 0);
         glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-        glDebugMessageControl(GL_DEBUG_SOURCE_API, GL_DEBUG_TYPE_OTHER, GL_DEBUG_SEVERITY_NOTIFICATION, 0, nullptr,
+        glDebugMessageControl(GL_DEBUG_SOURCE_API, GL_DEBUG_TYPE_OTHER,
+                              GL_DEBUG_SEVERITY_NOTIFICATION, 0, nullptr,
                               false);
     }
 
-    auto program = []() -> GLuint {
-        const char* vertexShaderSource = R"(
-            #version 460 core
-            layout (location = 0) in vec3 position;
-            layout (location = 1) in vec3 normal;
-
-            out vec3 vertex_colour;
-
-            uniform mat4 MVP;
-            uniform float switcher;
-
-            vec3 remappedColour = (normal + vec3(1.f)) / 2.f;
-
-
-            void main(){
-                vertex_colour = mix(normal, remappedColour, switcher);;
-                gl_Position = MVP * vec4(position, 1.0f);
-            }
-        )";
-
-        const char* fragmentShaderSource = R"(
-            #version 460 core
-
-            in vec3 vertex_colour;
-            out vec4 finalColor;
-
-
-            void main() {
-                finalColor = vec4(vertex_colour, 1.0);
-            }
-        )";
-
+    auto createProgram = [](const char* vertexShaderSource,
+                            const char* fragmentShaderSource) -> GLuint {
         auto vertexShader = glCreateShader(GL_VERTEX_SHADER);
         glShaderSource(vertexShader, 1, &vertexShaderSource, nullptr);
         glCompileShader(vertexShader);
@@ -111,16 +86,55 @@ int main() {
 
         glLinkProgram(program);
         return program;
-    }();
-    // clang-format off
+    };
 
-    const std::vector<vertex3D> backGroundVertices {{
-        //   position   |           normal        |  texCoord
-        {{-1.f, -1.f, 0.999999f},  {0.12f, 0.14f, 0.16f}, {0.f, 0.f}},
-        {{ 3.f, -1.f, 0.999999f},  {0.12f, 0.14f, 0.16f}, {3.f, 0.f}},
-        {{-1.f,  3.f, 0.999999f},  {0.80f, 0.80f, 0.82f}, {0.f, 3.f}}
-    }};
-    // clang-format on
+    const char* fragmentShaderSource = R"(
+            #version 450 core
+
+            in vec3 colour;
+            out vec4 finalColor;
+
+            void main() {
+                finalColor = vec4(colour, 1.0);
+            }
+        )";
+
+    auto programBG = createProgram(R"(
+        #version 450 core
+        out vec3 colour;
+
+        const vec4 vertices[] = vec4[]( vec4(-1.f, -1.f, 0.9999, 1.0),
+                                        vec4( 3.f, -1.f, 0.9999, 1.0),    
+                                        vec4(-1.f,  3.f, 0.9999, 1.0));   
+        const vec3 colours[]   = vec3[](vec3(0.12f, 0.14f, 0.16f),
+                                        vec3(0.12f, 0.14f, 0.16f),
+                                        vec3(0.80f, 0.80f, 0.82f));
+        
+
+        void main(){
+            colour = colours[gl_VertexID];
+            gl_Position = vertices[gl_VertexID];  
+        }
+    )",
+                                   fragmentShaderSource);
+
+    auto program = createProgram(R"(
+            #version 450 core
+            layout (location = 0) in vec3 position;
+            layout (location = 1) in vec3 normal;
+
+            out vec3 colour;
+
+            uniform mat4 modelViewProjection;
+
+            vec3 remappedColour = (normal + vec3(1.f)) / 2.f;
+
+            void main(){
+                colour = remappedColour;
+                gl_Position = modelViewProjection * vec4(position, 1.0f);
+            }
+        )",
+                                 fragmentShaderSource);
 
     auto meshData = objLoader::readObjElements("rubberToy.obj");
 
@@ -135,22 +149,27 @@ int main() {
         glCreateBuffers(1, &bufferObject);
 
         // upload immediately
-        glNamedBufferStorage(bufferObject, vertices.size() * sizeof(vertex3D), vertices.data(),
+        glNamedBufferStorage(bufferObject, vertices.size() * sizeof(vertex3D),
+                             vertices.data(),
                              GL_MAP_WRITE_BIT | GL_DYNAMIC_STORAGE_BIT);
 
-        glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "position"), /*buffer index*/ 0);
-        glVertexArrayAttribFormat(vao, 0, glm::vec3::length(), GL_FLOAT, GL_FALSE, offsetof(vertex3D, position));
+        glVertexArrayAttribBinding(
+            vao, glGetAttribLocation(program, "position"), /*buffer index*/ 0);
+        glVertexArrayAttribFormat(vao, 0, glm::vec3::length(), GL_FLOAT,
+                                  GL_FALSE, offsetof(vertex3D, position));
         glEnableVertexArrayAttrib(vao, 0);
 
-        glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "normal"), /*buffs idx*/ 0);
-        glVertexArrayAttribFormat(vao, 1, glm::vec3::length(), GL_FLOAT, GL_FALSE, offsetof(vertex3D, normal));
+        glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "normal"),
+                                   /*buffs idx*/ 0);
+        glVertexArrayAttribFormat(vao, 1, glm::vec3::length(), GL_FLOAT,
+                                  GL_FALSE, offsetof(vertex3D, normal));
         glEnableVertexArrayAttrib(vao, 1);
 
         // buffer to index mapping
         glVertexArrayVertexBuffer(vao, 0, bufferObject, /*offset*/ 0,
                                   /*stride*/ sizeof(vertex3D));
 
-        // NEW! element buffer
+                                   // NEW! element buffer
         if (indices.size() > 0) {
             GLuint elemementBufferObject;
             glCreateBuffers(1, &bufferObject);
@@ -159,61 +178,56 @@ int main() {
                                  indices.data(), GL_MAP_WRITE_BIT | GL_DYNAMIC_STORAGE_BIT);
             glVertexArrayElementBuffer(vao, elemementBufferObject);
         }
+
         return vao;
     };
 
-    auto backGroundVao = createBufferAndVao(backGroundVertices, {});
     auto meshVao = createBufferAndVao(meshData.vertices, meshData.indices);
+    glBindVertexArray(meshVao);
 
     glEnable(GL_DEPTH_TEST);
-    glEnable(GL_CULL_FACE);
 
     std::array<GLfloat, 4> clearColour{0.f, 0.f, 0.f, 1.f};
     GLfloat clearDepth{1.0f};
 
-    glm::mat4 model = glm::mat4(1.0f);
 
-    glm::mat4 ortho = glm::ortho(-1.f, 1.f, -1.f, 1.f, 1.f, -1.f);
-    glm::mat4 projection;
+    const glm::mat4 projection = glm::perspective(
+        glm::radians(65.0f),
+        static_cast<float>(width) / static_cast<float>(height), 0.1f, 100.0f);
 
-    projection = glm::perspective(glm::radians(65.0f), 1280.f / 640.f, 0.1f, 100.0f);
+    const glm::mat4 model = glm::mat4(1.0f);
 
     glm::mat4 mvp;
 
-    int mvpLocation = glGetUniformLocation(program, "MVP");
-    int remapUniformLocation = glGetUniformLocation(program, "switcher");
+    int mvpLocation = glGetUniformLocation(program, "modelViewProjection");
 
-    glUseProgram(program);
+    while (!glfwWindowShouldClose(windowPtr)) {
 
-    while (!glfwWindowShouldClose(window)) {
-        auto currentTime = duration<float>(system_clock::now() - startTime).count();
-
-        glClearBufferfv(GL_COLOR, 0, clearColour.data());
         glClearBufferfv(GL_DEPTH, 0, &clearDepth);
 
-        // bg
-        glBindVertexArray(backGroundVao);
-        glProgramUniformMatrix4fv(program, mvpLocation, 1, GL_FALSE, glm::value_ptr(ortho));
-        glProgramUniform1f(program, remapUniformLocation, 0);
-        glDrawArrays(GL_TRIANGLES, 0, (gl::GLsizei)backGroundVertices.size());
+        glUseProgram(programBG);
+        glDrawArrays(GL_TRIANGLES, 0, 3);
 
-        // mesh
-        glBindVertexArray(meshVao);
+        glUseProgram(program);
+        auto currentTime =
+            duration<float>(system_clock::now() - startTime).count();
 
-        glm::mat4 view =
-            glm::lookAt(glm::vec3(std::sin(currentTime * 0.5f) * 2, ((std::sin(currentTime * 0.32f) + 1.0f) / 2.0f) * 2,
-                                  std::cos(currentTime * 0.5f) * 2), // Camera is at (4,3,3), in World Space
-                        glm::vec3(0, .4, 0),                         // and looks at the origin
-                        glm::vec3(0, 1, 0)                           // Head is up (set to 0,-1,0 to look upside-down)
-            );
+        glm::mat4 view = glm::lookAt(
+            glm::vec3(std::sin(currentTime * 0.5f) * 2,
+                      ((std::sin(currentTime * 0.32f) + 1.0f) / 2.0f) * 2,
+                      std::cos(currentTime * 0.5f) *
+                          2),    // Camera is at (4,3,3), in World Space
+            glm::vec3(0, .4, 0), // and looks at the origin
+            glm::vec3(0, 1, 0) // Head is up (set to 0,-1,0 to look upside-down)
+        );
 
         mvp = projection * view * model;
-        glProgramUniformMatrix4fv(program, mvpLocation, 1, GL_FALSE, glm::value_ptr(mvp));
-        glProgramUniform1f(program, remapUniformLocation, 1);
 
+        glProgramUniformMatrix4fv(program, mvpLocation, 1, GL_FALSE,
+                                  glm::value_ptr(mvp));
         glDrawElements(GL_TRIANGLES, (gl::GLsizei)meshData.indices.size(), GL_UNSIGNED_INT, 0);
 
-        glfwSwapBuffers(window);
+        glfwSwapBuffers(windowPtr);
         glfwPollEvents();
     }
 

@@ -126,8 +126,6 @@ int main() {
 
             out vec3 colour;
 
-            uniform mat4 projection;
-
             vec3 remappedColour = (normal + vec3(1.f)) / 2.f;
 
             void main(){
@@ -176,16 +174,14 @@ int main() {
         return vao;
     };
 
-    GLuint vao;
-    glCreateVertexArrays(1, &vao);
     auto meshVao = createBufferAndVao(meshData.vertices);
+    glBindVertexArray(meshVao);
 
     glEnable(GL_DEPTH_TEST);
 
     std::array<GLfloat, 4> clearColour{0.f, 0.f, 0.f, 1.f};
     GLfloat clearDepth{1.0f};
 
-    glBindVertexArray(meshVao);
 
     while (!glfwWindowShouldClose(windowPtr)) {
 
