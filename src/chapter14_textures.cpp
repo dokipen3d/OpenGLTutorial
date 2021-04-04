@@ -150,7 +150,8 @@ int main() {
 
     // buffers
     auto createBufferAndVao = [](const std::vector<vertex3D>& vertices,
-                                 const std::vector<int>& indices, GLuint program) -> GLuint {
+                                 const std::vector<int>& indices, GLuint program,
+                                 bool enableTexCoord = true) -> GLuint {
         // in core profile, at least 1 vao is needed
         GLuint vao;
         glCreateVertexArrays(1, &vao);
@@ -162,21 +163,23 @@ int main() {
         glNamedBufferStorage(bufferObject, vertices.size() * sizeof(vertex3D), vertices.data(),
                              GL_MAP_WRITE_BIT | GL_DYNAMIC_STORAGE_BIT);
 
-        glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "position"),
+        glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "aPosition"),
                                    /*buffer index*/ 0);
         glVertexArrayAttribFormat(vao, 0, glm::vec3::length(), GL_FLOAT, GL_FALSE,
                                   offsetof(vertex3D, position));
         glEnableVertexArrayAttrib(vao, 0);
 
-        glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "normal"), /*buffs idx*/ 0);
+        glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "aNormal"), /*buffs idx*/ 0);
         glVertexArrayAttribFormat(vao, 1, glm::vec3::length(), GL_FLOAT, GL_FALSE,
                                   offsetof(vertex3D, normal));
         glEnableVertexArrayAttrib(vao, 1);
 
-        glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "texCoord"), /*buffs idx*/ 0);
-        glVertexArrayAttribFormat(vao, 2, glm::vec2::length(), GL_FLOAT, GL_FALSE,
-                                  offsetof(vertex3D, texCoord));
-        glEnableVertexArrayAttrib(vao, 2);
+        if(enableTexCoord){
+            glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "aTexCoord"), /*buffs idx*/ 0);
+            glVertexArrayAttribFormat(vao, 2, glm::vec2::length(), GL_FLOAT, GL_FALSE,
+                                    offsetof(vertex3D, texCoord));
+            glEnableVertexArrayAttrib(vao, 2);
+        }
 
         // buffer to index mapping
         glVertexArrayVertexBuffer(vao, 0, bufferObject, /*offset*/ 0,
@@ -193,7 +196,7 @@ int main() {
         return vao;
     };
 
-    auto backGroundVao = createBufferAndVao(backGroundVertices, {}, vertexColourProgram);
+    auto backGroundVao = createBufferAndVao(backGroundVertices, {}, vertexColourProgram, false);
     auto meshVao = createBufferAndVao(meshData.vertices, meshData.indices, textureProgram);
 
     // texture

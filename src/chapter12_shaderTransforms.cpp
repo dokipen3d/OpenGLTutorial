@@ -1,5 +1,5 @@
 #include "error_handling.hpp"
-#include "obj_loader_simple_split.hpp"
+#include "obj_loader_simple_split_cpp.hpp"
 
 #include <array>
 #include <chrono>     // current time
@@ -28,7 +28,10 @@ int main() {
 
     auto startTime = system_clock::now();
 
-    auto window = []() {
+    const int width = 1600;
+    const int height = 900;
+
+    auto windowPtr = [&]() {
         if (!glfwInit()) {
             fmt::print("glfw didnt initialize!\n");
             std::exit(EXIT_FAILURE);
@@ -36,22 +39,23 @@ int main() {
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
 
         /* Create a windowed mode window and its OpenGL context */
-        auto window = glfwCreateWindow(1920, 960, "Chapter 12 - Shader Transforms", nullptr, nullptr);
+        auto windowPtr = glfwCreateWindow(
+            width, height, "Chapter 12 - Shader Transforms", nullptr, nullptr);
 
-        if (!window) {
+        if (!windowPtr) {
             fmt::print("window doesn't exist\n");
             glfwTerminate();
             std::exit(EXIT_FAILURE);
         }
 
-        glfwMakeContextCurrent(window);
-        glfwSwapInterval(0);
+        glfwSetWindowPos(windowPtr, 160, 90);
+        glfwMakeContextCurrent(windowPtr);
 
         glbinding::initialize(glfwGetProcAddress, false);
-        return window;
+        return windowPtr;
     }();
 
     // debugging
@@ -59,11 +63,13 @@ int main() {
         glEnable(GL_DEBUG_OUTPUT);
         glDebugMessageCallback(errorHandler::MessageCallback, 0);
         glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-        glDebugMessageControl(GL_DEBUG_SOURCE_API, GL_DEBUG_TYPE_OTHER, GL_DEBUG_SEVERITY_NOTIFICATION, 0, nullptr,
+        glDebugMessageControl(GL_DEBUG_SOURCE_API, GL_DEBUG_TYPE_OTHER,
+                              GL_DEBUG_SEVERITY_NOTIFICATION, 0, nullptr,
                               false);
     }
 
-    auto createProgram = [](const char* vertexShaderSource, const char* fragmentShaderSource) -> GLuint {
+    auto createProgram = [](const char* vertexShaderSource,
+                            const char* fragmentShaderSource) -> GLuint {
         auto vertexShader = glCreateShader(GL_VERTEX_SHADER);
         glShaderSource(vertexShader, 1, &vertexShaderSource, nullptr);
         glCompileShader(vertexShader);
@@ -127,7 +133,8 @@ int main() {
     auto meshData = objLoader::readObjSplit("rubberToy.obj");
 
     // buffers
-    auto createBufferAndVao = [&program](const std::vector<vertex3D>& vertices) -> GLuint {
+    auto createBufferAndVao =
+        [&program](const std::vector<vertex3D>& vertices) -> GLuint {
         // in core profile, at least 1 vao is needed
         GLuint vao;
         glCreateVertexArrays(1, &vao);
@@ -136,15 +143,20 @@ int main() {
         glCreateBuffers(1, &bufferObject);
 
         // upload immediately
-        glNamedBufferStorage(bufferObject, vertices.size() * sizeof(vertex3D), vertices.data(),
+        glNamedBufferStorage(bufferObject, vertices.size() * sizeof(vertex3D),
+                             vertices.data(),
                              GL_MAP_WRITE_BIT | GL_DYNAMIC_STORAGE_BIT);
 
-        glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "position"), /*buffer index*/ 0);
-        glVertexArrayAttribFormat(vao, 0, glm::vec3::length(), GL_FLOAT, GL_FALSE, offsetof(vertex3D, position));
+        glVertexArrayAttribBinding(
+            vao, glGetAttribLocation(program, "position"), /*buffer index*/ 0);
+        glVertexArrayAttribFormat(vao, 0, glm::vec3::length(), GL_FLOAT,
+                                  GL_FALSE, offsetof(vertex3D, position));
         glEnableVertexArrayAttrib(vao, 0);
 
-        glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "normal"), /*buffs idx*/ 0);
-        glVertexArrayAttribFormat(vao, 1, glm::vec3::length(), GL_FLOAT, GL_FALSE, offsetof(vertex3D, normal));
+        glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "normal"),
+                                   /*buffs idx*/ 0);
+        glVertexArrayAttribFormat(vao, 1, glm::vec3::length(), GL_FLOAT,
+                                  GL_FALSE, offsetof(vertex3D, normal));
         glEnableVertexArrayAttrib(vao, 1);
 
         // buffer to index mapping
@@ -168,7 +180,9 @@ int main() {
     glm::mat4 ortho = glm::ortho(-1.f, 1.f, -1.f, 1.f, 1.f, -1.f);
     glm::mat4 projection;
 
-    projection = glm::perspective(glm::radians(65.0f), 1280.f / 640.f, 0.1f, 100.0f);
+    projection = glm::perspective(
+        glm::radians(65.0f),
+        static_cast<float>(width) / static_cast<float>(height), 0.1f, 100.0f);
 
     glm::mat4 mvp;
 
@@ -177,34 +191,39 @@ int main() {
 
     glUseProgram(program);
 
-    while (!glfwWindowShouldClose(window)) {
-        auto currentTime = duration<float>(system_clock::now() - startTime).count();
+    while (!glfwWindowShouldClose(windowPtr)) {
+        auto currentTime =
+            duration<float>(system_clock::now() - startTime).count();
 
         glClearBufferfv(GL_COLOR, 0, clearColour.data());
         glClearBufferfv(GL_DEPTH, 0, &clearDepth);
 
         // bg
         glBindVertexArray(backGroundVao);
-        glProgramUniformMatrix4fv(program, mvpLocation, 1, GL_FALSE, glm::value_ptr(ortho));
+        glProgramUniformMatrix4fv(program, mvpLocation, 1, GL_FALSE,
+                                  glm::value_ptr(ortho));
         glProgramUniform1f(program, remapUniformLocation, 0);
         glDrawArrays(GL_TRIANGLES, 0, (gl::GLsizei)backGroundVertices.size());
 
         // mesh
         glBindVertexArray(meshVao);
 
-        glm::mat4 view =
-            glm::lookAt(glm::vec3(std::sin(currentTime * 0.5f) * 2, ((std::sin(currentTime * 0.32f) + 1.0f) / 2.0f) * 2,
-                                  std::cos(currentTime * 0.5f) * 2), // Camera is at (4,3,3), in World Space
-                        glm::vec3(0, .4, 0),                         // and looks at the origin
-                        glm::vec3(0, 1, 0)                           // Head is up (set to 0,-1,0 to look upside-down)
-            );
+        glm::mat4 view = glm::lookAt(
+            glm::vec3(std::sin(currentTime * 0.5f) * 2,
+                      ((std::sin(currentTime * 0.32f) + 1.0f) / 2.0f) * 2,
+                      std::cos(currentTime * 0.5f) *
+                          2),    // Camera is at (4,3,3), in World Space
+            glm::vec3(0, .4, 0), // and looks at the origin
+            glm::vec3(0, 1, 0) // Head is up (set to 0,-1,0 to look upside-down)
+        );
 
         mvp = projection * view * model;
-        glProgramUniformMatrix4fv(program, mvpLocation, 1, GL_FALSE, glm::value_ptr(mvp));
+        glProgramUniformMatrix4fv(program, mvpLocation, 1, GL_FALSE,
+                                  glm::value_ptr(mvp));
         glProgramUniform1f(program, remapUniformLocation, 1);
         glDrawArrays(GL_TRIANGLES, 0, (gl::GLsizei)meshData.vertices.size());
 
-        glfwSwapBuffers(window);
+        glfwSwapBuffers(windowPtr);
         glfwPollEvents();
     }
 

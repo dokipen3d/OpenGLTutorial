@@ -30,10 +30,10 @@ int main() {
 
     auto startTime = system_clock::now();
 
-    const int width = 1280;
-    const int height = 1280;
+    const int width = 900;
+    const int height = 900;
 
-    auto windowPtr = [](int w, int h) {
+    auto windowPtr = [&]()  {
         if (!glfwInit()) {
             fmt::print("glfw didnt initialize!\n");
             std::exit(EXIT_FAILURE);
@@ -43,30 +43,34 @@ int main() {
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
 
         /* Create a windowed mode window and its OpenGL context */
-        auto windowPtr = glfwCreateWindow(w, h, "Chapter 11 - Loading Data from Disk", nullptr, nullptr);
+        auto windowPtr = glfwCreateWindow(width, height,
+                                          "Chapter 11 - Loading Data from Disk",
+                                          nullptr, nullptr);
 
         if (!windowPtr) {
             fmt::print("window doesn't exist\n");
             glfwTerminate();
             std::exit(EXIT_FAILURE);
         }
-        glfwSetWindowPos(windowPtr, 520, 180);
+        glfwSetWindowPos(windowPtr, 480, 90);
 
         glfwMakeContextCurrent(windowPtr);
         glbinding::initialize(glfwGetProcAddress, false);
         return windowPtr;
-    }(width, height);
+    }();
 
     // debugging
     {
         glEnable(GL_DEBUG_OUTPUT);
         glDebugMessageCallback(errorHandler::MessageCallback, 0);
         glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-        glDebugMessageControl(GL_DEBUG_SOURCE_API, GL_DEBUG_TYPE_OTHER, GL_DEBUG_SEVERITY_NOTIFICATION, 0, nullptr,
+        glDebugMessageControl(GL_DEBUG_SOURCE_API, GL_DEBUG_TYPE_OTHER,
+                              GL_DEBUG_SEVERITY_NOTIFICATION, 0, nullptr,
                               false);
     }
 
-    auto createProgram = [](const char* vertexShaderSource, const char* fragmentShaderSource) -> GLuint {
+    auto createProgram = [](const char* vertexShaderSource,
+                            const char* fragmentShaderSource) -> GLuint {
         auto vertexShader = glCreateShader(GL_VERTEX_SHADER);
         glShaderSource(vertexShader, 1, &vertexShaderSource, nullptr);
         glCompileShader(vertexShader);
@@ -132,7 +136,8 @@ int main() {
     fmt::print("size {}", meshData.vertices.size());
 
     // buffers
-    auto createBufferAndVao = [&program](const std::vector<vertex3D>& vertices) -> GLuint {
+    auto createBufferAndVao =
+        [&program](const std::vector<vertex3D>& vertices) -> GLuint {
         // in core profile, at least 1 vao is needed
         GLuint vao;
         glCreateVertexArrays(1, &vao);
@@ -141,15 +146,20 @@ int main() {
         glCreateBuffers(1, &bufferObject);
 
         // upload immediately
-        glNamedBufferStorage(bufferObject, vertices.size() * sizeof(vertex3D), vertices.data(),
+        glNamedBufferStorage(bufferObject, vertices.size() * sizeof(vertex3D),
+                             vertices.data(),
                              GL_MAP_WRITE_BIT | GL_DYNAMIC_STORAGE_BIT);
 
-        glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "position"), /*buffer index*/ 0);
-        glVertexArrayAttribFormat(vao, 0, glm::vec3::length(), GL_FLOAT, GL_FALSE, offsetof(vertex3D, position));
+        glVertexArrayAttribBinding(
+            vao, glGetAttribLocation(program, "position"), /*buffer index*/ 0);
+        glVertexArrayAttribFormat(vao, 0, glm::vec3::length(), GL_FLOAT,
+                                  GL_FALSE, offsetof(vertex3D, position));
         glEnableVertexArrayAttrib(vao, 0);
 
-        glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "normal"), /*buffs idx*/ 0);
-        glVertexArrayAttribFormat(vao, 1, glm::vec3::length(), GL_FLOAT, GL_FALSE, offsetof(vertex3D, normal));
+        glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "normal"),
+                                   /*buffs idx*/ 0);
+        glVertexArrayAttribFormat(vao, 1, glm::vec3::length(), GL_FLOAT,
+                                  GL_FALSE, offsetof(vertex3D, normal));
         glEnableVertexArrayAttrib(vao, 1);
 
         // buffer to index mapping

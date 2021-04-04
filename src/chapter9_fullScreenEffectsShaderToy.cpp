@@ -24,10 +24,10 @@ using namespace std::chrono;
 int main() {
 
     auto startTime = system_clock::now();
-    const int width = 1280;
-    const int height = 720;
+    const int width = 1600;
+    const int height = 900;
 
-    auto windowPtr = [](int w, int h) {
+    auto windowPtr = [&]() {
         if (!glfwInit()) {
             fmt::print("glfw didnt initialize!\n");
             std::exit(EXIT_FAILURE);
@@ -37,7 +37,7 @@ int main() {
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
 
         /* Create a windowed mode window and its OpenGL context */
-        auto windowPtr = glfwCreateWindow(w, h, "Chapter 9 - Full Screen Effects (Diy Shadertoy!)",
+        auto windowPtr = glfwCreateWindow(width, height, "Chapter 9 - Full Screen Effects (Diy Shadertoy!)",
                                        nullptr, nullptr);
 
         if (!windowPtr) {
@@ -46,11 +46,10 @@ int main() {
             std::exit(EXIT_FAILURE);
         }
         glfwSetWindowPos(windowPtr, 520, 180);
-
         glfwMakeContextCurrent(windowPtr);
         glbinding::initialize(glfwGetProcAddress, false);
         return windowPtr;
-    }(width, height);
+    }();
 
     // debugging
     {
@@ -81,200 +80,192 @@ int main() {
         return program;
     };
 
+
+
     auto program = createProgram(R"(
         #version 450 core
-        layout (location = 0) in vec2 position;
-        layout (location = 1) in vec2 colours;
 
         out vec2 fragCoord;
 
+        const vec4 vertices[] = vec4[]( vec4(-1.f, -1.f, 0.0, 1.0),
+                                        vec4( 3.f, -1.f, 0.0, 1.0),    
+                                        vec4(-1.f,  3.f, 0.0, 1.0));   
+
+        const vec2 fragCoords[] = vec2[]( vec2(0.0,        0.0), 
+                                          vec2(2.0 * 1920, 0.0),    
+                                          vec2(0.0,        2.0 * 1080));   
+
         void main(){
-            fragCoord = colours;
-            gl_Position = vec4(position, 0.0f, 1.0f);
+            fragCoord = fragCoords[gl_VertexID];
+            gl_Position = vertices[gl_VertexID]; 
         }
     )",
                                  R"(
-        #version 450 core
+            #version 450 core
+        // Protean clouds by nimitz (twitter: @stormoid)
+    // https://www.shadertoy.com/view/3l23Rh
+    // License Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License
+    // Contact the author for other licensing options
 
-        // The MIT License
-        // Copyright © 2013 Inigo Quilez
-        // Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
-        // associated documentation files (the "Software"), to deal in the Software without restriction,
-        // including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
-        // and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so,
-        // subject to the following conditions: The above copyright notice and this permission notice shall be
-        // included in all copies or substantial portions of the Software. THE SOFTWARE IS PROVIDED "AS IS",
-        // WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-        // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-        // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-        // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
-        // IN THE SOFTWARE.
-        //
-        // I've not seen anybody out there computing correct cell interior distances for Voronoi
-        // patterns yet. That's why they cannot shade the cell interior correctly, and why you've
-        // never seen cell boundaries rendered correctly.
-        //
-        // However, here's how you do mathematically correct distances (note the equidistant and non
-        // degenerated grey isolines inside the cells) and hence edges (in yellow):
-        //
-        // http://www.iquilezles.org/www/articles/voronoilines/voronoilines.htm
-        //
-        // More Voronoi shaders:
-        //
-        // Exact edges:  https://www.shadertoy.com/view/ldl3W8
-        // Hierarchical: https://www.shadertoy.com/view/Xll3zX
-        // Smooth:       https://www.shadertoy.com/view/ldB3zc
-        // Voronoise:    https://www.shadertoy.com/view/Xd23Dh
+    /*
+        Technical details:
 
-        in vec2 fragCoord;
-        out vec4 finalColor;
+        The main volume noise is generated from a deformed periodic grid, which can produce
+        a large range of noise-like patterns at very cheap evalutation cost. Allowing for multiple
+        fetches of volume gradient computation for improved lighting.
 
-        uniform float iTime;
-        uniform vec2 iResolution;
+        To further accelerate marching, since the volume is smooth, more than half the the density
+        information isn't used to rendering or shading but only as an underlying volume	distance to 
+        determine dynamic step size, by carefully selecting an equation	(polynomial for speed) to 
+        step as a function of overall density (not necessarialy rendered) the visual results can be 
+        the	same as a naive implementation with ~40% increase in rendering performance.
 
-        vec2 hash2( vec2 p )
+        Since the dynamic marching step size is even less uniform due to steps not being rendered at all
+        the fog is evaluated as the difference of the fog integral at each rendered step.
+
+    */
+
+         in vec2 fragCoord;
+        out vec4 fragColor;
+
+         float iTime = 1.11f;
+         vec2 iResolution = vec2(1920,1080);
+        vec2 iMouse = vec2(960.f,0.f);
+    mat2 rot(in float a){float c = cos(a), s = sin(a);return mat2(c,s,-s,c);}
+    const mat3 m3 = mat3(0.33338, 0.56034, -0.71817, -0.87887, 0.32651, -0.15323, 0.15162, 0.69596, 0.61339)*1.93;
+    float mag2(vec2 p){return dot(p,p);}
+    float linstep(in float mn, in float mx, in float x){ return clamp((x - mn)/(mx - mn), 0., 1.); }
+    float prm1 = 0.;
+    vec2 bsMo = vec2(0);
+
+    vec2 disp(float t){ return vec2(sin(t*0.22)*1., cos(t*0.175)*1.)*2.; }
+
+    vec2 map(vec3 p)
+    {
+        vec3 p2 = p;
+        p2.xy -= disp(p.z).xy;
+        p.xy *= rot(sin(p.z+iTime)*(0.1 + prm1*0.05) + iTime*0.09);
+        float cl = mag2(p2.xy);
+        float d = 0.;
+        p *= .61;
+        float z = 1.;
+        float trk = 1.;
+        float dspAmp = 0.1 + prm1*0.2;
+        for(int i = 0; i < 5; i++)
         {
-            // texture based white noise
-            //return textureLod( iChannel0, (p+0.5)/256.0, 0.0 ).xy;
-
-            // procedural white noise
-            return fract(sin(vec2(dot(p,vec2(127.1,311.7)),dot(p,vec2(269.5,183.3))))*43758.5453);
+            p += sin(p.zxy*0.75*trk + iTime*trk*.8)*dspAmp;
+            d -= abs(dot(cos(p), sin(p.yzx))*z);
+            z *= 0.57;
+            trk *= 1.4;
+            p = p*m3;
         }
+        d = abs(d + prm1*3.)+ prm1*.3 - 2.5 + bsMo.y;
+        return vec2(d + cl*.2 + 0.25, cl);
+    }
 
-        vec3 voronoi( in vec2 x )
+    vec4 render( in vec3 ro, in vec3 rd, float time )
+    {
+        vec4 rez = vec4(0);
+        const float ldst = 8.;
+        vec3 lpos = vec3(disp(time + ldst)*0.5, time + ldst);
+        float t = 1.5;
+        float fogT = 0.;
+        for(int i=0; i<130; i++)
         {
-            vec2 n = floor(x);
-            vec2 f = fract(x);
+            if(rez.a > 0.99)break;
 
-            //----------------------------------
-            // first pass: regular voronoi
-            //----------------------------------
-            vec2 mg, mr;
-
-            float md = 8.0;
-            for( int j=-1; j<=1; j++ )
-            for( int i=-1; i<=1; i++ )
+            vec3 pos = ro + t*rd;
+            vec2 mpv = map(pos);
+            float den = clamp(mpv.x-0.3,0.,1.)*1.12;
+            float dn = clamp((mpv.x + 2.),0.,3.);
+            
+            vec4 col = vec4(0);
+            if (mpv.x > 0.6)
             {
-                vec2 g = vec2(float(i),float(j));
-                vec2 o = hash2( n + g );
-
-                // o = 0.5 + 0.5*sin( iTime + 6.2831*o );
-
-                vec2 r = g + o - f;
-                float d = dot(r,r);
-
-                if( d<md )
-                {
-                    md = d;
-                    mr = r;
-                    mg = g;
-                }
+            
+                col = vec4(sin(vec3(5.,0.4,0.2) + mpv.y*0.1 +sin(pos.z*0.4)*0.5 + 1.8)*0.5 + 0.5,0.08);
+                col *= den*den*den;
+                col.rgb *= linstep(4.,-2.5, mpv.x)*2.3;
+                float dif =  clamp((den - map(pos+.8).x)/9., 0.001, 1. );
+                dif += clamp((den - map(pos+.35).x)/2.5, 0.001, 1. );
+                col.xyz *= den*(vec3(0.005,.045,.075) + 1.5*vec3(0.033,0.07,0.03)*dif);
             }
-
-            //----------------------------------
-            // second pass: distance to borders
-            //----------------------------------
-            md = 8.0;
-            for( int j=-2; j<=2; j++ )
-            for( int i=-2; i<=2; i++ )
-            {
-                vec2 g = mg + vec2(float(i),float(j));
-                vec2 o = hash2( n + g );
-
-                // o = 0.5 + 0.5*sin( iTime + 6.2831*o );
-
-                vec2 r = g + o - f;
-
-                if( dot(mr-r,mr-r)>0.00001 )
-                md = min( md, dot( 0.5*(mr+r), normalize(r-mr) ) );
-            }
-
-            return vec3( md, mr );
+            
+            float fogC = exp(t*0.2 - 2.2);
+            col.rgba += vec4(0.06,0.11,0.11, 0.1)*clamp(fogC-fogT, 0., 1.);
+            fogT = fogC;
+            rez = rez + col*(1. - rez.a);
+            t += clamp(0.5 - dn*dn*.05, 0.09, 0.3);
         }
+        return clamp(rez, 0.0, 1.0);
+    }
 
+    float getsat(vec3 c)
+    {
+        float mi = min(min(c.x, c.y), c.z);
+        float ma = max(max(c.x, c.y), c.z);
+        return (ma - mi)/(ma+ 1e-7);
+    }
 
-        void main() {
+    //from my "Will it blend" shader (https://www.shadertoy.com/view/lsdGzN)
+    vec3 iLerp(in vec3 a, in vec3 b, in float x)
+    {
+        vec3 ic = mix(a, b, x) + vec3(1e-6,0.,0.);
+        float sd = abs(getsat(ic) - mix(getsat(a), getsat(b), x));
+        vec3 dir = normalize(vec3(2.*ic.x - ic.y - ic.z, 2.*ic.y - ic.x - ic.z, 2.*ic.z - ic.y - ic.x));
+        float lgt = dot(vec3(1.0), ic);
+        float ff = dot(dir, normalize(ic));
+        ic += 1.5*dir*sd*ff*lgt;
+        return clamp(ic,0.,1.);
+    }
 
-            vec2 p = fragCoord; // * vec2(iResolution.x/iResolution.y, 1);
+    void main()
+    {	
+        vec2 q = fragCoord.xy/iResolution.xy;
+        vec2 p = (gl_FragCoord.xy - 0.5*iResolution.xy)/iResolution.y;
+        bsMo = (iMouse.xy - 0.5*iResolution.xy)/iResolution.y;
+        
+        float time = iTime*3.;
+        vec3 ro = vec3(0,0,time);
+        
+        ro += vec3(sin(iTime)*0.5,sin(iTime*1.)*0.,0);
+            
+        float dspAmp = .85;
+        ro.xy += disp(ro.z)*dspAmp;
+        float tgtDst = 3.5;
+        
+        vec3 target = normalize(ro - vec3(disp(time + tgtDst)*dspAmp, time + tgtDst));
+        ro.x -= bsMo.x*2.;
+        vec3 rightdir = normalize(cross(target, vec3(0,1,0)));
+        vec3 updir = normalize(cross(rightdir, target));
+        rightdir = normalize(cross(updir, target));
+        vec3 rd=normalize((p.x*rightdir + p.y*updir)*1. - target);
+        rd.xy *= rot(-disp(time + 3.5).x*0.2 + bsMo.x);
+        prm1 = smoothstep(-0.4, 0.4,sin(iTime*0.3));
+        vec4 scn = render(ro, rd, time);
+            
+        vec3 col = scn.rgb;
+        col = iLerp(col.bgr, col.rgb, clamp(1.-prm1,0.05,1.));
+        
+        col = pow(col, vec3(.55,0.65,0.6))*vec3(1.,.97,.9);
 
-            vec3 c = voronoi( 8.0*p );
-
-            // isolines
-            vec3 col = c.x*(0.5 + 0.5*sin(64.0*c.x))*vec3(1.0);
-            // borders
-            col = mix( vec3(1.0,0.6,0.0), col, smoothstep( 0.04, 0.07, c.x ) );
-            // feature points
-            float dd = length( c.yz );
-            col = mix( vec3(1.0,0.6,0.1), col, smoothstep( 0.0, 0.12, dd) );
-            col += vec3(1.0,0.6,0.1)*(1.0-smoothstep( 0.0, 0.04, dd));
-
-            finalColor = vec4(col,1.0);
-        }
+        col *= pow( 16.0*q.x*q.y*(1.0-q.x)*(1.0-q.y), 0.12)*0.7+0.3; //Vign
+        
+        fragColor = vec4( col, 1.0 );
+    }
     )");
 
-    struct vertex2D {
-        glm::vec2 position;
-        glm::vec2 colour;
-    };
-
-    // clang-format off
-    // interleaved data
-    const std::array<vertex2D, 3> backGroundVertices {{
-        //   position   |   colour
-        {{-1.f, -1.f},  {0.0f, 0.0f}},
-        {{ 3.f, -1.f},  {2.0f, 0.0f}},
-        {{-1.f,  3.f},  {0.0f, 2.00f}}
-    }};
-
-    // clang-format on
-
-    // buffers
-    auto createBufferAndVao = [&program](const std::array<vertex2D, 3>& vertices) -> GLuint {
-        // in core profile, at least 1 vao is needed
-        GLuint vao;
-        glCreateVertexArrays(1, &vao);
-        glBindVertexArray(vao);
-
-        GLuint bufferObject;
-        glCreateBuffers(1, &bufferObject);
-
-        // upload immediately
-        glNamedBufferStorage(bufferObject, vertices.size() * sizeof(vertex2D), vertices.data(),
-                             GL_MAP_WRITE_BIT | GL_DYNAMIC_STORAGE_BIT);
-
-        glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "position"),
-                                   /*buffer index*/ 0);
-        glVertexArrayAttribFormat(vao, 0, glm::vec2::length(), GL_FLOAT, GL_FALSE,
-                                  offsetof(vertex2D, position));
-        glEnableVertexArrayAttrib(vao, 0);
-
-        glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "colours"), /*buffs idx*/ 0);
-        glVertexArrayAttribFormat(vao, 1, glm::vec2::length(), GL_FLOAT, GL_FALSE,
-                                  offsetof(vertex2D, colour));
-        glEnableVertexArrayAttrib(vao, 1);
-
-        // buffer to index mapping
-        glVertexArrayVertexBuffer(vao, 0, bufferObject, /*offset*/ 0, /*stride*/ sizeof(vertex2D));
-
-        return vao;
-    };
-
-    auto backGroundVao = createBufferAndVao(backGroundVertices);
-
-    std::array<GLfloat, 4> clearColour{0.f, 0.f, 0.f, 0.f};
-    std::array<GLfloat, 1> clearDepth{1.0};
-
+   
     glUseProgram(program);
+
+    GLuint vao;
+    glCreateVertexArrays(1, &vao);
+    glBindVertexArray(vao);
 
 
     while (!glfwWindowShouldClose(windowPtr)) {
 
-        glClearBufferfv(GL_COLOR, 0, clearColour.data());
-        glClearBufferfv(GL_DEPTH, 0, clearDepth.data());
-
         // draw full screen triangle
-        glBindVertexArray(backGroundVao);
-
         glDrawArrays(GL_TRIANGLES, 0, 3);
 
         glfwSwapBuffers(windowPtr);
