@@ -33,7 +33,7 @@ int main() {
     const int width = 900;
     const int height = 900;
 
-    auto windowPtr = [&]()  {
+    auto windowPtr = [&]() {
         if (!glfwInit()) {
             fmt::print("glfw didnt initialize!\n");
             std::exit(EXIT_FAILURE);
@@ -89,51 +89,58 @@ int main() {
         return program;
     };
 
-    const char* vertexShaderSource = R"(
+    const char* fragmentShaderSource = R"(
+            #version 450 core
+
+            in vec3 colour;
+            out vec4 finalColor;
+
+            void main() {
+                finalColor = vec4(colour, 1.0);
+            }
+        )";
+
+    auto programBG = createProgram(R"(
+        #version 450 core
+        out vec3 colour;
+
+        const vec4 vertices[] = vec4[]( vec4(-1.f, -1.f, 0.0, 1.0),
+                                        vec4( 3.f, -1.f, 0.0, 1.0),    
+                                        vec4(-1.f,  3.f, 0.0, 1.0));   
+        const vec3 colours[]   = vec3[](vec3(0.12f, 0.14f, 0.16f),
+                                        vec3(0.12f, 0.14f, 0.16f),
+                                        vec3(0.80f, 0.80f, 0.82f));
+        
+
+        void main(){
+            colour = colours[gl_VertexID];
+            gl_Position = vertices[gl_VertexID];  
+        }
+    )",
+                                   fragmentShaderSource);
+
+    auto program = createProgram(R"(
             #version 450 core
             layout (location = 0) in vec3 position;
             layout (location = 1) in vec3 normal;
 
-            out vec3 vertex_colour;
+            out vec3 colour;
 
             uniform mat4 projection;
-            uniform float switcher;
 
             vec3 remappedColour = (normal + vec3(1.f)) / 2.f;
 
             void main(){
-                vertex_colour = mix(normal, remappedColour, switcher);
+                colour = remappedColour;
                 gl_Position = vec4((position * vec3(1.0f, 1.0f, -1.0f)) +
-                                   (vec3(0, -0.5, 0) * switcher), 1.0f);
+                                   (vec3(0, -0.5, 0)), 1.0f);
             }
-        )";
+        )",
+                                 fragmentShaderSource);
 
-    const char* fragmentShaderSource = R"(
-            #version 450 core
-
-            in vec3 vertex_colour;
-            out vec4 finalColor;
-
-
-            void main() {
-                finalColor = vec4(vertex_colour, 1.0);
-            }
-        )";
-
-    auto program = createProgram(vertexShaderSource, fragmentShaderSource);
-
-    // clang-format off
-    const std::vector<vertex3D> backGroundVertices {{
-        //   position   |           normal        |  texCoord
-        {{-1.f, -1.f, -0.999999f},  {0.12f, 0.14f, 0.16f}, {0.f, 0.f}},
-        {{ 3.f, -1.f, -0.999999f},  {0.12f, 0.14f, 0.16f}, {3.f, 0.f}},
-        {{-1.f,  3.f, -0.999999f},  {0.80f, 0.80f, 0.82f}, {0.f, 3.f}}
-    }};
-    // clang-format on
+    
 
     auto meshData = objLoader::readObjSplit("rubberToy.obj");
-
-    fmt::print("size {}", meshData.vertices.size());
 
     // buffers
     auto createBufferAndVao =
@@ -169,7 +176,8 @@ int main() {
         return vao;
     };
 
-    auto backGroundVao = createBufferAndVao(backGroundVertices);
+    GLuint vao;
+    glCreateVertexArrays(1, &vao);
     auto meshVao = createBufferAndVao(meshData.vertices);
 
     glEnable(GL_DEPTH_TEST);
@@ -177,20 +185,18 @@ int main() {
     std::array<GLfloat, 4> clearColour{0.f, 0.f, 0.f, 1.f};
     GLfloat clearDepth{1.0f};
 
-    int remapUniformLocation = glGetUniformLocation(program, "switcher");
-    glUseProgram(program);
+    glBindVertexArray(meshVao);
 
     while (!glfwWindowShouldClose(windowPtr)) {
 
-        glClearBufferfv(GL_COLOR, 0, clearColour.data());
         glClearBufferfv(GL_DEPTH, 0, &clearDepth);
 
-        glBindVertexArray(backGroundVao);
-        glProgramUniform1f(program, remapUniformLocation, 0);
-        glDrawArrays(GL_TRIANGLES, 0, (gl::GLsizei)backGroundVertices.size());
+        // glBindVertexArray(backGroundVao);
 
-        glBindVertexArray(meshVao);
-        glProgramUniform1f(program, remapUniformLocation, 1);
+        glUseProgram(programBG);
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+
+        glUseProgram(program);
         glDrawArrays(GL_TRIANGLES, 0, (gl::GLsizei)meshData.vertices.size());
 
         glfwSwapBuffers(windowPtr);

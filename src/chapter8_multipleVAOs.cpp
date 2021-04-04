@@ -34,7 +34,9 @@ int main() {
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
 
-        auto windowPtr = glfwCreateWindow(1280, 720, "Chapter 8 - Multiple Vertex Array Objects", nullptr, nullptr);
+        auto windowPtr = glfwCreateWindow(
+            1280, 720, "Chapter 8 - Multiple Vertex Array Objects", nullptr,
+            nullptr);
 
         if (!windowPtr) {
             fmt::print("window doesn't exist\n");
@@ -53,11 +55,13 @@ int main() {
         glEnable(GL_DEBUG_OUTPUT);
         glDebugMessageCallback(errorHandler::MessageCallback, 0);
         glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-        glDebugMessageControl(GL_DEBUG_SOURCE_API, GL_DEBUG_TYPE_OTHER, GL_DEBUG_SEVERITY_NOTIFICATION, 0, nullptr,
+        glDebugMessageControl(GL_DEBUG_SOURCE_API, GL_DEBUG_TYPE_OTHER,
+                              GL_DEBUG_SEVERITY_NOTIFICATION, 0, nullptr,
                               false);
     }
 
-    auto createProgram = [](const char* vertexShaderSource, const char* fragmentShaderSource) -> GLuint {
+    auto createProgram = [](const char* vertexShaderSource,
+                            const char* fragmentShaderSource) -> GLuint {
         auto vertexShader = glCreateShader(GL_VERTEX_SHADER);
         glShaderSource(vertexShader, 1, &vertexShaderSource, nullptr);
         glCompileShader(vertexShader);
@@ -119,14 +123,15 @@ int main() {
 
     const std::array<vertex3D, 3> foregroundVertices {{
         //   position   |     colour
-        {{-0.5f, -0.7f,  0.01f},  {1.f, 0.f, 0.f}},
-        {{0.5f, -0.7f,  -0.01f},  {0.f, 1.f, 0.f}},
-        {{0.0f, 0.6888f, 0.01f}, {0.f, 0.f, 1.f}}
+        {{-0.5f, -0.7f,   0.01f},  {1.f, 0.f, 0.f}},
+        {{ 0.5f, -0.7f,  -0.01f},  {0.f, 1.f, 0.f}},
+        {{ 0.0f, 0.68888, 0.01f},  {0.f, 0.f, 1.f}}
     }};
     // clang-format on
 
     // buffers
-    auto createBufferAndVao = [&program](const std::array<vertex3D, 3>& vertices) -> GLuint {
+    auto createBufferAndVao =
+        [&program](const std::array<vertex3D, 3>& vertices) -> GLuint {
         // in core profile, at least 1 vao is needed
         GLuint vao;
         glCreateVertexArrays(1, &vao);
@@ -136,17 +141,21 @@ int main() {
         glCreateBuffers(1, &bufferObject);
 
         // upload immediately
-        glNamedBufferStorage(bufferObject, vertices.size() * sizeof(vertex3D), vertices.data(),
+        glNamedBufferStorage(bufferObject, vertices.size() * sizeof(vertex3D),
+                             vertices.data(),
                              GL_MAP_WRITE_BIT | GL_DYNAMIC_STORAGE_BIT);
 
-        glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "position"),
+        glVertexArrayAttribBinding(vao,
+                                   glGetAttribLocation(program, "position"),
                                    /*buffer index*/ 0);
-        glVertexArrayAttribFormat(vao, 0, glm::vec3::length(), GL_FLOAT, GL_FALSE, offsetof(vertex3D, position));
+        glVertexArrayAttribFormat(vao, 0, glm::vec3::length(), GL_FLOAT,
+                                  GL_FALSE, offsetof(vertex3D, position));
         glEnableVertexArrayAttrib(vao, 0);
 
         glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "colours"),
                                    /*buffs idx*/ 0);
-        glVertexArrayAttribFormat(vao, 1, glm::vec3::length(), GL_FLOAT, GL_FALSE, offsetof(vertex3D, colour));
+        glVertexArrayAttribFormat(vao, 1, glm::vec3::length(), GL_FLOAT,
+                                  GL_FALSE, offsetof(vertex3D, colour));
         glEnableVertexArrayAttrib(vao, 1);
 
         // buffer to index mapping
@@ -156,27 +165,73 @@ int main() {
         return vao;
     };
 
-    auto backGroundVao = createBufferAndVao(backGroundVertices);
-    auto foreGroundVao = createBufferAndVao(foregroundVertices);
+    auto createBuffer =
+        [&program](const std::array<vertex3D, 3>& vertices) -> GLuint {
+        GLuint bufferObject;
+        glCreateBuffers(1, &bufferObject);
+
+        // upload immediately
+        glNamedBufferStorage(bufferObject, vertices.size() * sizeof(vertex3D),
+                             vertices.data(),
+                             GL_MAP_WRITE_BIT | GL_DYNAMIC_STORAGE_BIT);
+
+        return bufferObject;
+    };
+
+    auto backGroundBuffer = createBuffer(backGroundVertices);
+    auto foreGroundBuffer = createBuffer(foregroundVertices);
+
+    auto createVertexArrayObject = [](GLuint program) -> GLuint {
+        GLuint vao;
+        glCreateVertexArrays(1, &vao);
+
+        glEnableVertexArrayAttrib(vao, 0);
+        glEnableVertexArrayAttrib(vao, 1);
+
+        glVertexArrayAttribBinding(vao,
+                                   glGetAttribLocation(program, "position"),
+                                   /*buffer index*/ 0);
+        glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "colours"),
+                                   /*buffs idx*/ 0);
+
+        glVertexArrayAttribFormat(vao, 0, glm::vec3::length(), GL_FLOAT,
+                                  GL_FALSE, offsetof(vertex3D, position));
+        glVertexArrayAttribFormat(vao, 1, glm::vec3::length(), GL_FLOAT,
+                                  GL_FALSE, offsetof(vertex3D, colour));
+
+        return vao;
+    };
+
+    auto vertexArrayObject = createVertexArrayObject(program);
+
+    // auto backGroundVao = createBufferAndVao(backGroundVertices);
+    // auto foreGroundVao = createBufferAndVao(foregroundVertices);
 
     std::array<GLfloat, 4> clearColour{0.f, 0.f, 0.f, 0.f};
     std::array<GLfloat, 1> clearDepth{1.0};
 
     glUseProgram(program);
+    glBindVertexArray(vertexArrayObject);
 
     glEnable(GL_DEPTH_TEST);
 
     while (!glfwWindowShouldClose(windowPtr)) {
 
-        glClearBufferfv(GL_COLOR, 0, clearColour.data());
+        // glClearBufferfv(GL_COLOR, 0, clearColour.data());
         glClearBufferfv(GL_DEPTH, 0, clearDepth.data());
 
         // draw bg
-        glBindVertexArray(backGroundVao);
+        // glBindVertexArray(backGroundVao);
+        glVertexArrayVertexBuffer(vertexArrayObject, 0, backGroundBuffer,
+                                  /*offset*/ 0,
+                                  /*stride*/ sizeof(vertex3D));
         glDrawArrays(GL_TRIANGLES, 0, 3);
 
         // draw fg
-        glBindVertexArray(foreGroundVao);
+        // glBindVertexArray(foreGroundVao);
+        glVertexArrayVertexBuffer(vertexArrayObject, 0, foreGroundBuffer,
+                                  /*offset*/ 0,
+                                  /*stride*/ sizeof(vertex3D));
         glDrawArrays(GL_TRIANGLES, 0, 3);
         glfwSwapBuffers(windowPtr);
         glfwPollEvents();

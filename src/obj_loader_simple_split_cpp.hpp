@@ -68,15 +68,11 @@ std::ios_base::sync_with_stdio(false);
     fmt::print(stderr, "starting obj loader\n");
     RawMeshData meshData;
 
-    // //char line[128];
-    // size_t line_buf_size = 0;
     size_t line_size;
 
     std::ifstream inputFileStream(filePath);
     std::string lineString;
         
-
-
     // for storing where spaces and slashes go
     std::vector<int> spacePositions(8);
 
@@ -108,7 +104,6 @@ std::ios_base::sync_with_stdio(false);
                 std::stof(&lineString[spacePositions[0]]),
                 std::stof(&lineString[spacePositions[1]]),
                 std::stof(&lineString[spacePositions[2]]));
-
             break;
         }
         case vn: {
@@ -158,7 +153,6 @@ std::ios_base::sync_with_stdio(false);
 
                 meshData.faceIndices.emplace_back(di, ei, fi);
             }
-
             break;
         }
 
@@ -205,6 +199,9 @@ MeshDataSplit readObjSplit(const std::string& filePath) {
             rawMeshData.textureCoords[rawMeshData.faceIndices[i].y]};
     }
     return meshData;
+
+    fmt::print("size {}", meshData.vertices.size());
+
 }
 
 } // namespace objLoader
