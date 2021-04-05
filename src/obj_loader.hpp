@@ -463,6 +463,7 @@ RawMeshData readObjRaw(const std::string& filePath, const std::string& materialF
     auto timeTaken = duration<float>(system_clock::now() - startTime).count();
     fmt::print(stderr, "doki obj time took {}\n", timeTaken);
 
+
     return meshData;
 }
 
@@ -495,6 +496,9 @@ MeshDataSplit readObjSplit(const std::string& filePath) {
                                 rawMeshData.normals[rawMeshData.faceIndices[i].z],
                                 rawMeshData.textureCoords[rawMeshData.faceIndices[i].y]};
     }
+
+        fmt::print("size {}", meshData.vertices.size());
+
     return meshData;
 }
 

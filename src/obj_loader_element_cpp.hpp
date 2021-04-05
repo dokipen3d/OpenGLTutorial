@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <numeric>
+#include <atomic>
 
 #include <cctype>
 #include <chrono> // current time
@@ -230,9 +231,11 @@ MeshDataSplit readObjSplit(const std::string& filePath) {
             rawMeshData.normals[rawMeshData.faceIndices[i].z],
             rawMeshData.textureCoords[rawMeshData.faceIndices[i].y]};
     }
-    return meshData;
 
     fmt::print("size {}", meshData.vertices.size());
+
+    return meshData;
+
 }
 
 /////////////////////////////////////// NEW STUFF IN CHAPTER 13

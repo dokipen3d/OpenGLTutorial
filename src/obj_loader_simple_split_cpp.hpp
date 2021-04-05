@@ -198,10 +198,10 @@ MeshDataSplit readObjSplit(const std::string& filePath) {
             rawMeshData.normals[rawMeshData.faceIndices[i].z],
             rawMeshData.textureCoords[rawMeshData.faceIndices[i].y]};
     }
-    return meshData;
 
     fmt::print("size {}", meshData.vertices.size());
 
+    return meshData;
 }
 
 } // namespace objLoader

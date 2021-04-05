@@ -136,17 +136,10 @@ int main() {
         )",
                                  fragmentShaderSource);
 
-    
-
     auto meshData = objLoader::readObjSplit("rubberToy.obj");
 
-    // buffers
-    auto createBufferAndVao =
+    auto createBuffer =
         [&program](const std::vector<vertex3D>& vertices) -> GLuint {
-        // in core profile, at least 1 vao is needed
-        GLuint vao;
-        glCreateVertexArrays(1, &vao);
-
         GLuint bufferObject;
         glCreateBuffers(1, &bufferObject);
 
@@ -155,33 +148,42 @@ int main() {
                              vertices.data(),
                              GL_MAP_WRITE_BIT | GL_DYNAMIC_STORAGE_BIT);
 
-        glVertexArrayAttribBinding(
-            vao, glGetAttribLocation(program, "position"), /*buffer index*/ 0);
-        glVertexArrayAttribFormat(vao, 0, glm::vec3::length(), GL_FLOAT,
-                                  GL_FALSE, offsetof(vertex3D, position));
-        glEnableVertexArrayAttrib(vao, 0);
+        return bufferObject;
+    };
 
-        glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "normal"),
-                                   /*buffs idx*/ 0);
-        glVertexArrayAttribFormat(vao, 1, glm::vec3::length(), GL_FLOAT,
-                                  GL_FALSE, offsetof(vertex3D, normal));
+    auto backGroundBuffer = createBuffer(meshData.vertices);
+
+    auto createVertexArrayObject = [](GLuint program) -> GLuint {
+        GLuint vao;
+        glCreateVertexArrays(1, &vao);
+
+        glEnableVertexArrayAttrib(vao, 0);
         glEnableVertexArrayAttrib(vao, 1);
 
-        // buffer to index mapping
-        glVertexArrayVertexBuffer(vao, 0, bufferObject, /*offset*/ 0,
-                                  /*stride*/ sizeof(vertex3D));
+        glVertexArrayAttribBinding(vao,
+                                   glGetAttribLocation(program, "position"),
+                                   /*buffer index*/ 0);
+        glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "normal"),
+                                   /*buffs idx*/ 0);
+
+        glVertexArrayAttribFormat(vao, 0, glm::vec3::length(), GL_FLOAT,
+                                  GL_FALSE, offsetof(vertex3D, position));
+        glVertexArrayAttribFormat(vao, 1, glm::vec3::length(), GL_FLOAT,
+                                  GL_FALSE, offsetof(vertex3D, normal));
 
         return vao;
     };
 
-    auto meshVao = createBufferAndVao(meshData.vertices);
+    auto meshVao = createVertexArrayObject(program);
+    glVertexArrayVertexBuffer(meshVao, 0, backGroundBuffer,
+                              /*offset*/ 0,
+                              /*stride*/ sizeof(vertex3D));
     glBindVertexArray(meshVao);
 
     glEnable(GL_DEPTH_TEST);
 
     std::array<GLfloat, 4> clearColour{0.f, 0.f, 0.f, 1.f};
     GLfloat clearDepth{1.0f};
-
 
     while (!glfwWindowShouldClose(windowPtr)) {
 

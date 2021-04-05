@@ -136,15 +136,12 @@ int main() {
         )",
                                  fragmentShaderSource);
 
-    auto meshData = objLoader::readObjElements("rubberToy.obj");
+    auto meshData = objLoader::readObjElements("tommy.obj");
 
-    // buffers
-    auto createBufferAndVao = [&program](const std::vector<vertex3D>& vertices,
-                                         const std::vector<int>& indices) -> GLuint {
-        // in core profile, at least 1 vao is needed
-        GLuint vao;
-        glCreateVertexArrays(1, &vao);
-
+    auto createBuffers =
+        [&program](
+            const std::vector<vertex3D>& vertices,
+            const std::vector<int>& indices) -> std::pair<GLuint, GLuint> {
         GLuint bufferObject;
         glCreateBuffers(1, &bufferObject);
 
@@ -153,36 +150,46 @@ int main() {
                              vertices.data(),
                              GL_MAP_WRITE_BIT | GL_DYNAMIC_STORAGE_BIT);
 
-        glVertexArrayAttribBinding(
-            vao, glGetAttribLocation(program, "position"), /*buffer index*/ 0);
-        glVertexArrayAttribFormat(vao, 0, glm::vec3::length(), GL_FLOAT,
-                                  GL_FALSE, offsetof(vertex3D, position));
-        glEnableVertexArrayAttrib(vao, 0);
+        GLuint elemementBufferObject;
 
-        glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "normal"),
-                                   /*buffs idx*/ 0);
-        glVertexArrayAttribFormat(vao, 1, glm::vec3::length(), GL_FLOAT,
-                                  GL_FALSE, offsetof(vertex3D, normal));
+        if (indices.size() > 0) {
+            glCreateBuffers(1, &elemementBufferObject);
+            glNamedBufferStorage(
+                elemementBufferObject, indices.size() * sizeof(GLuint),
+                indices.data(), GL_MAP_WRITE_BIT | GL_DYNAMIC_STORAGE_BIT);
+        }
+
+        return {bufferObject, elemementBufferObject};
+    };
+
+    auto meshBufferWithElements = createBuffers(meshData.vertices, meshData.indices);
+
+    auto createVertexArrayObject = [](GLuint program) -> GLuint {
+        GLuint vao;
+        glCreateVertexArrays(1, &vao);
+
+        glEnableVertexArrayAttrib(vao, 0);
         glEnableVertexArrayAttrib(vao, 1);
 
-        // buffer to index mapping
-        glVertexArrayVertexBuffer(vao, 0, bufferObject, /*offset*/ 0,
-                                  /*stride*/ sizeof(vertex3D));
+        glVertexArrayAttribBinding(vao,
+                                   glGetAttribLocation(program, "position"),
+                                   /*buffer index*/ 0);
+        glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "normal"),
+                                   /*buffs idx*/ 0);
 
-                                   // NEW! element buffer
-        if (indices.size() > 0) {
-            GLuint elemementBufferObject;
-            glCreateBuffers(1, &bufferObject);
-            glCreateBuffers(1, &elemementBufferObject);
-            glNamedBufferStorage(elemementBufferObject, indices.size() * sizeof(GLuint),
-                                 indices.data(), GL_MAP_WRITE_BIT | GL_DYNAMIC_STORAGE_BIT);
-            glVertexArrayElementBuffer(vao, elemementBufferObject);
-        }
+        glVertexArrayAttribFormat(vao, 0, glm::vec3::length(), GL_FLOAT,
+                                  GL_FALSE, offsetof(vertex3D, position));
+        glVertexArrayAttribFormat(vao, 1, glm::vec3::length(), GL_FLOAT,
+                                  GL_FALSE, offsetof(vertex3D, normal));
 
         return vao;
     };
 
-    auto meshVao = createBufferAndVao(meshData.vertices, meshData.indices);
+    auto meshVao = createVertexArrayObject(program);
+    glVertexArrayVertexBuffer(meshVao, 0, meshBufferWithElements.first,
+                              /*offset*/ 0,
+                              /*stride*/ sizeof(vertex3D));
+    glVertexArrayElementBuffer(meshVao, meshBufferWithElements.second);
     glBindVertexArray(meshVao);
 
     glEnable(GL_DEPTH_TEST);
@@ -190,9 +197,8 @@ int main() {
     std::array<GLfloat, 4> clearColour{0.f, 0.f, 0.f, 1.f};
     GLfloat clearDepth{1.0f};
 
-
     const glm::mat4 projection = glm::perspective(
-        glm::radians(65.0f),
+        glm::radians(45.0f),
         static_cast<float>(width) / static_cast<float>(height), 0.1f, 100.0f);
 
     const glm::mat4 model = glm::mat4(1.0f);
@@ -217,7 +223,7 @@ int main() {
                       ((std::sin(currentTime * 0.32f) + 1.0f) / 2.0f) * 2,
                       std::cos(currentTime * 0.5f) *
                           2),    // Camera is at (4,3,3), in World Space
-            glm::vec3(0, .4, 0), // and looks at the origin
+            glm::vec3(0, 1, 0), // and looks at the origin
             glm::vec3(0, 1, 0) // Head is up (set to 0,-1,0 to look upside-down)
         );
 
@@ -225,7 +231,8 @@ int main() {
 
         glProgramUniformMatrix4fv(program, mvpLocation, 1, GL_FALSE,
                                   glm::value_ptr(mvp));
-        glDrawElements(GL_TRIANGLES, (gl::GLsizei)meshData.indices.size(), GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, (gl::GLsizei)meshData.indices.size(),
+                       GL_UNSIGNED_INT, 0);
 
         glfwSwapBuffers(windowPtr);
         glfwPollEvents();
