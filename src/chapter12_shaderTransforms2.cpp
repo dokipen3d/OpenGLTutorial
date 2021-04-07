@@ -119,9 +119,9 @@ int main() {
         const vec4 vertices[] = vec4[]( vec4(-1.f, -1.f, 0.9999, 1.0),
                                         vec4( 3.f, -1.f, 0.9999, 1.0),    
                                         vec4(-1.f,  3.f, 0.9999, 1.0));   
-        const vec3 colours[]   = vec3[](vec3(1.0f, 0.0f, 0.0f),
-                                        vec3(0.0f, 1.0f, 0.0f),
-                                        vec3(0.0f, 0.0f, 1.0f));
+        const vec3 colours[]   = vec3[](vec3(0.12f, 0.14f, 0.16f),
+                                        vec3(0.12f, 0.14f, 0.16f),
+                                        vec3(0.80f, 0.80f, 0.82f));
         
 
         void main(){
@@ -145,6 +145,30 @@ int main() {
             void main(){
                 colour = remappedColour;
                 gl_Position = modelViewProjection * vec4(position, 1.0f);
+            }
+        )",
+                                 fragmentShaderSource);
+
+
+    auto gridProgram = createProgram(R"(
+            #version 450 core
+            out vec3 colour;
+
+            // #define FLT_MAX 3.402823466e+38
+            // #define FLT_MIN 1.175494351e-38
+            #define FLT_MAX 50
+            #define FLT_MIN -50
+            uniform mat4 modelViewProjection;
+
+
+            const vec3 vertices[] = vec3[]( vec3(FLT_MIN, 0, FLT_MIN),
+                                            vec3(FLT_MAX, 0, FLT_MIN),    
+                                            vec3(FLT_MAX/2.0, 0.0, FLT_MAX));  
+            
+
+            void main(){
+                colour = vertices[gl_VertexID];
+                gl_Position = modelViewProjection * vec4(vertices[gl_VertexID], 1.0);  
             }
         )",
                                  fragmentShaderSource);
@@ -207,6 +231,7 @@ int main() {
     glm::mat4 mvp;
 
     int mvpLocation = glGetUniformLocation(program, "modelViewProjection");
+    int mvpgridLocation = glGetUniformLocation(gridProgram, "modelViewProjection");
 
     while (!glfwWindowShouldClose(windowPtr)) {
         auto renderStart = system_clock::now();
@@ -216,13 +241,20 @@ int main() {
         glUseProgram(programBG);
         glDrawArrays(GL_TRIANGLES, 0, 3);
 
+        // grid
+        glUseProgram(gridProgram);
+
+        glProgramUniformMatrix4fv(gridProgram, mvpgridLocation, 1, GL_FALSE,
+                                  glm::value_ptr(mvp));
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+
         glUseProgram(program);
         auto currentTime =
             duration<float>(system_clock::now() - startTime).count();
 
         glm::mat4 view = glm::lookAt(
             glm::vec3(std::sin(currentTime * 0.5f) * 2,
-                      ((std::sin(currentTime * 0.32f) + 1.0f) / 2.0f) * 2,
+                      ((std::sin(currentTime * 0.62f))),// + 0.5f) / 2.0f) * 2,
                       std::cos(currentTime * 0.5f) *
                           2),    // Camera is at (4,3,3), in World Space
             glm::vec3(0, .4, 0), // and looks at the origin

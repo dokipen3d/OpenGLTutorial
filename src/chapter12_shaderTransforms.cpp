@@ -21,6 +21,47 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+
+
+// // make uvs go from -1 to 1
+//                 vec2 uv = (colour.xy - vec2(0.5f)) * 2.0;
+
+//                 Ray R = glup_primary_ray(invModelViewProjection, uv);
+
+//                 vec3 pos;
+//                 float t = intersectplane( R.O, normalize(R.V), pos);
+
+//                 float d = maxd;
+
+//                 float dplane = tracePlaneY(R.O, normalize(R.V));
+//                 vec2 cc = vec2(1, 0);
+//                 if (dplane >= 0.) {
+//                     d = min(d, dplane);
+//                     cc = R.O.xz + normalize(R.V).xz * d; // grid uv at hit point
+//                     cc *= 4.; // tiling
+//                 }
+
+//                 float aboveOrBelowZero = (float(R.O.y < pos.y)*2.0)-1.0;
+//                 float facingDown = dot( normalize(R.V), vec3(0.0 ,aboveOrBelowZero, 0.0));
+//                 float splitScreen = 1.0-step(facingDown, 0.0); 
+
+//                 float c = float(dot(normalize(pos), normalize(R.V)) > 0.0);
+
+//                 //float gt = clamp(1.0-gridTexture(cc),0.0,1.0)  * splitScreen;// 1.0-* float(R.O.y < pos.x);
+//                 float gt = gridTexture(cc) ;
+//                 // vec4 v_clip_coord = modelViewProjection * vec4(pos, 1.0);
+//                 // float f_ndc_depth = clamp(v_clip_coord.z / v_clip_coord.w, 0.1, 2.0);
+//                 // gl_FragDepth = ((f_ndc_depth + gt) * 0.5);
+
+
+//                 float far = gl_DepthRange.far;
+//                 float near = gl_DepthRange.near;
+//                 //float t = -near / (far-near);
+
+//                 float spotlight = min(1.0, 1.5 - 0.6*length(pos.xz));
+//                 vec3 finalColour = vec3(gt);
+//                 finalColor = vec4(finalColour, 1.0);
+
 using namespace gl;
 using namespace std::chrono;
 
@@ -97,23 +138,16 @@ int main() {
             uniform mat4 invModelViewProjection;
             uniform mat4 modelViewProjection;
 
-            float intersectplane( vec3 ro, vec3 rd, out vec3 pos )
+            // halfspace
+            float tracePlaneY(vec3 rp, vec3 rd)
             {
-
-                float tmin = 10000.0;
-
-                // raytrace-plane
-
-                float h = (0.0-ro.y)/rd.y;   
-                //h = max(0.0, h);
-                if( h>0.0) 
-                { 
-                    tmin = h; 
-                    pos = ro + h*rd;
-                }
-
-                return tmin;
+                return rp.y <= 0. ? 0. :
+                    rd.y >= 0. ? -1. :
+                    rp.y / -rd.y;
             }
+
+
+           
             //https://stackoverflow.com/questions/42633685/glsl-how-to-calculate-a-ray-direction-using-the-projection-matrix
             struct Ray {
                 vec3 O; // Origin
@@ -136,49 +170,101 @@ int main() {
                 return Ray(near.xyz, far.xyz-near.xyz) ;
             }
 
-            const float N = 20.0; // grid ratio
-            float gridTexture( in vec2 p )
+            float filterWidth2(vec2 uv)
             {
-                // coordinates
-                vec2 i = step( fract(p), vec2(1.0/N) );
-                //pattern
-                //return (1.0-i.x)*(1.0-i.y);   // grid (N=10)
+                vec2 dx = dFdx(uv), dy = dFdy(uv);
+                return dot(dx, dx) + dot(dy, dy) + .0001;
+            }
+
+            float gridThickness = .1; //.2; //.25; //.02; //.4; //
+
+
+            float gridSmooth(vec2 p)
+            {
+                vec2 q = p;
+                q += .5;
+                q -= floor(q);
+                q = (gridThickness + 1.) * .5 - abs(q - .5);
+                float w = 12.*filterWidth2(p);
+                float s = sqrt(gridThickness);
+                return smoothstep(.5-w*s,.5+w, max(q.x, q.y));
+            }
+
+            #define TILE_SIZE 1.0
+            #define LINE_WIDTH 2.0
+
+            // gives the grid lines alpha factor
+            float grid(in vec2 uv)
+            {
+                vec2 grid = vec2(0.0);
+                float line = 0.0;
                 
-                // other possible patterns are these
-                //return 1.0-i.x*i.y;           // squares (N=4)
-                return 1.0-i.x-i.y+2.0*i.x*i.y; // checker (N=2)
+                for (int i = 0; i < 1; ++i)
+                {
+                    // antialiased lines
+                    grid = 1.0 * abs(mod(uv + 0.5*TILE_SIZE, TILE_SIZE * pow(10.0, float(i))) - 0.5) / fwidth(uv) / LINE_WIDTH;
+                    line = max(line, pow(4.0, float(i)) * (1.0 - min(min(grid.x, grid.y), 1.0)));
+                }
+                
+                return line;
+            }
+
+            float intersectplane2( vec3 rayOrigin, vec3 rayDirection, out vec3 pos ){
+
+                const float maxd = 0.;
+                vec3 rayNormalized = normalize(rayDirection);
+                //float hitDepth = rayOrigin.y <= 0. ? 0. :
+                //                 rayNormalized.y >= 0. ? -1. :
+                //                -rayOrigin.y/rayNormalized.y;
+                            
+                float hitDepth = (-rayOrigin.y)/rayNormalized.y;
+                            
+                float d = 80000;
+                pos = rayOrigin + rayDirection* 10000; vec3(0.0);
+                if (hitDepth >= 0.) {
+                    d = min(d, hitDepth);
+                    pos = rayOrigin + normalize(rayDirection) * d; // grid uv at hit point
+                }
+                return d ;
+            }
+
+
+            float filteredGrid( in vec2 p, in vec2 dpdx, in vec2 dpdy )
+            {
+                const float N = 24.0;
+                vec2 w = max(abs(dpdx), abs(dpdy));
+                vec2 a = p + 0.5*w;                        
+                vec2 b = p - 0.5*w;           
+                vec2 i = (floor(a)+min(fract(a)*N,1.0)-
+                        floor(b)-min(fract(b)*N,1.0))/(N*w);
+                return (1.0-i.x)*(1.0-i.y);
             }
 
             void main() {
 
-                // make uvs go from -1 to 1
                 vec2 uv = (colour.xy - vec2(0.5f)) * 2.0;
 
                 Ray R = glup_primary_ray(invModelViewProjection, uv);
 
-                // rayDir = modelViewProjection * vec4(colour,1.f);
                 vec3 pos;
-                float t = intersectplane( R.O, R.V, pos);
-                
+                float depth = intersectplane2(R.O, R.V, pos);
+                vec3 ray = R.V - R.O; 
+                //float horizon = float(R.O.y > 0.0);// - float(R.V.y > 0.0);
+                float horizon = float(R.V.y > 0.0);// - float(R.V.y > 0.0);
 
-                float aboveOrBelowZero = (float(R.O.y < pos.y)*2.0)-1.0;
-                float facingDown = dot( normalize(R.V), vec3(0.0 ,aboveOrBelowZero, 0.0));
-                float splitScreen = 1.0-step(facingDown, 0.0); 
-                float gt = clamp(1.0-gridTexture(pos.xz),0.0,1.0)  * splitScreen;// 1.0-* float(R.O.y < pos.x);
-                //float gt = clamp(1.0-gridTexture(pos.xz),0.0,1.0);
-                // vec4 v_clip_coord = modelViewProjection * vec4(pos, 1.0);
-                // float f_ndc_depth = clamp(v_clip_coord.z / v_clip_coord.w, 0.1, 2.0);
-                // gl_FragDepth = ((f_ndc_depth + gt) * 0.5);
+                //float gt = gridSmooth(pos.xz*4);
+                vec2 samplePos = pos.xz*4;
+                float gt = 1.0-filteredGrid(samplePos, dFdx( samplePos ), dFdy( samplePos ));
+                if(depth > 50.0){
+                    //horizon = 1.0;
+                };
 
+ 
+                // float far = gl_DepthRange.far;
+                // float near = gl_DepthRange.near;
 
-                float far = gl_DepthRange.far;
-                float near = gl_DepthRange.near;
-                //float t = -near / (far-near);
-
-                float spotlight = min(1.0, 1.5 - 0.6*length(pos.xz));
-                vec3 finalColour = vec3(gt*spotlight);
-                finalColor = vec4(finalColour, 1.0);
-
+                float far = 1.0;
+                float near = 0.0;
                 vec4 clip_space_pos = modelViewProjection* vec4(pos.xyz, 1.0);
 
                 // get the depth value in normalized device coordinates
@@ -186,12 +272,24 @@ int main() {
 
                 // and compute the range based on gl_DepthRange settings (not necessary with default settings, but left for completeness)
                 
+                //float spotlight = min(1.0, 1.5 - 0.5*length(pos.xz));
+
+                float falloff = 24;
+                float falloffPower = 2;
+                float spotlight = pow(
+                                    max(
+                                        1.0-(length(pos.xz)/falloff), 0.0
+                                        
+                                     ), 3.0);
 
                 float depth2 = (((far-near) * clip_space_depth) + near + far) / 2.0;
+                //float depth3 = (((far-near) * depth) + near + far) / 2.0;
+                //float depth3 = (((depth-near)/far) +1.0) / 2.0;
 
                 // and return the result
-                gl_FragDepth = max(depth2,0.01);
-
+                gl_FragDepth =  clamp(depth2, 1e-05, 1.0-1e-05) ;
+                finalColor = vec4(vec3(gt)*spotlight, gt*spotlight);
+                //finalColor = vec4(pos, 1.0);
 
             }
         )";
@@ -289,7 +387,8 @@ int main() {
     glBindVertexArray(meshVao);
 
     glEnable(GL_DEPTH_TEST);
-
+    glEnable(GL_BLEND);  
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  
     std::array<GLfloat, 4> clearColour{0.f, 0.f, 0.f, 1.f};
     GLfloat clearDepth{1.0f};
 
@@ -302,7 +401,7 @@ int main() {
     glm::mat4 mvp;
     glm::mat4 mvpInv;
     glClearDepth(1.0f);
-    glDepthFunc(GL_LEQUAL);
+
     int mvpLocation = glGetUniformLocation(program, "modelViewProjection");
     int invMvpLocationBG = glGetUniformLocation(programBG, "invModelViewProjection");
     int mvpLocationBG = glGetUniformLocation(programBG, "modelViewProjection");
@@ -313,7 +412,7 @@ int main() {
             duration<float>(system_clock::now() - startTime).count();
         glm::mat4 view = glm::lookAt(
             glm::vec3(std::sin(currentTime * 0.5f) * 2,
-                      (std::sin(currentTime * 1.02f) ) * 2, //+ 1.0f) / 2.0f
+                      (std::sin(currentTime * 0.4) ) * 0.5, //+ 1.0f) / 2.0f
                       std::cos(currentTime * 0.5f) *
                           2),    // Camera is at (4,3,3), in World Space
             glm::vec3(0, .2, 0), // and looks at the origin
@@ -322,16 +421,10 @@ int main() {
 
         mvp = projection * view * model;
         mvpInv = glm::inverse(mvp);
-        //glClearBufferfv(GL_DEPTH, 0, &clearDepth);
+        glClearBufferfv(GL_COLOR, 0, clearColour.data());
+        glClearBufferfv(GL_DEPTH, 0, &clearDepth);
 
-        
-        glClear(GL_DEPTH_BUFFER_BIT);
-        glUseProgram(programBG);
-        glProgramUniformMatrix4fv(programBG, invMvpLocationBG, 1, GL_FALSE,
-                                  glm::value_ptr(mvpInv));
-        glProgramUniformMatrix4fv(programBG, mvpLocationBG, 1, GL_FALSE,
-                                  glm::value_ptr(mvp));
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+ 
 
         glUseProgram(program);
         
@@ -339,6 +432,14 @@ int main() {
         glProgramUniformMatrix4fv(program, mvpLocation, 1, GL_FALSE,
                                   glm::value_ptr(mvp));
         glDrawArrays(GL_TRIANGLES, 0, (gl::GLsizei)meshData.vertices.size());
+
+
+               glUseProgram(programBG);
+        glProgramUniformMatrix4fv(programBG, invMvpLocationBG, 1, GL_FALSE,
+                                  glm::value_ptr(mvpInv));
+        glProgramUniformMatrix4fv(programBG, mvpLocationBG, 1, GL_FALSE,
+                                  glm::value_ptr(mvp));
+        glDrawArrays(GL_TRIANGLES, 0, 3);
 
         glfwSwapBuffers(windowPtr);
         auto timeTaken =
