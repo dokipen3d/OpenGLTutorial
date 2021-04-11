@@ -213,9 +213,6 @@ int main() {
 
                 const float maxd = 0.;
                 vec3 rayNormalized = normalize(rayDirection);
-                //float hitDepth = rayOrigin.y <= 0. ? 0. :
-                //                 rayNormalized.y >= 0. ? -1. :
-                //                -rayOrigin.y/rayNormalized.y;
                             
                 float hitDepth = (-rayOrigin.y)/rayNormalized.y;
                             
@@ -248,48 +245,31 @@ int main() {
 
                 vec3 pos;
                 float depth = intersectplane2(R.O, R.V, pos);
-                vec3 ray = R.V - R.O; 
-                //float horizon = float(R.O.y > 0.0);// - float(R.V.y > 0.0);
-                float horizon = float(R.V.y > 0.0);// - float(R.V.y > 0.0);
 
-                //float gt = gridSmooth(pos.xz*4);
                 vec2 samplePos = pos.xz*4;
                 float gt = 1.0-filteredGrid(samplePos, dFdx( samplePos ), dFdy( samplePos ));
-                if(depth > 50.0){
-                    //horizon = 1.0;
-                };
-
  
-                // float far = gl_DepthRange.far;
-                // float near = gl_DepthRange.near;
+                float far = gl_DepthRange.far; // 1.0
+                float near = gl_DepthRange.near;// 0.0;
 
-                float far = 1.0;
-                float near = 0.0;
                 vec4 clip_space_pos = modelViewProjection* vec4(pos.xyz, 1.0);
 
                 // get the depth value in normalized device coordinates
                 float clip_space_depth = clip_space_pos.z / clip_space_pos.w;
 
                 // and compute the range based on gl_DepthRange settings (not necessary with default settings, but left for completeness)
-                
-                //float spotlight = min(1.0, 1.5 - 0.5*length(pos.xz));
 
                 float falloff = 24;
                 float falloffPower = 2;
-                float spotlight = pow(
-                                    max(
-                                        1.0-(length(pos.xz)/falloff), 0.0
-                                        
-                                     ), 3.0);
+                float spotlight = pow(max(1.0-(length(pos.xz)/falloff), 0.0 ), 3.0);
 
                 float depth2 = (((far-near) * clip_space_depth) + near + far) / 2.0;
-                //float depth3 = (((far-near) * depth) + near + far) / 2.0;
-                //float depth3 = (((depth-near)/far) +1.0) / 2.0;
+
 
                 // and return the result
                 gl_FragDepth =  clamp(depth2, 1e-05, 1.0-1e-05) ;
-                finalColor = vec4(vec3(gt)*spotlight, gt*spotlight);
-                //finalColor = vec4(pos, 1.0);
+                finalColor = vec4(vec3(1.0f), gt*spotlight);
+
 
             }
         )";
@@ -412,10 +392,10 @@ int main() {
             duration<float>(system_clock::now() - startTime).count();
         glm::mat4 view = glm::lookAt(
             glm::vec3(std::sin(currentTime * 0.5f) * 2,
-                      (std::sin(currentTime * 0.4) ) * 0.5, //+ 1.0f) / 2.0f
+                      (std::sin(currentTime * 0.64f) + 1.5f) / 2.0f,
                       std::cos(currentTime * 0.5f) *
                           2),    // Camera is at (4,3,3), in World Space
-            glm::vec3(0, .2, 0), // and looks at the origin
+            glm::vec3(0, .7, 0), // and looks at the origin
             glm::vec3(0, 1, 0) // Head is up (set to 0,-1,0 to look upside-down)
         );
 
@@ -434,7 +414,7 @@ int main() {
         glDrawArrays(GL_TRIANGLES, 0, (gl::GLsizei)meshData.vertices.size());
 
 
-               glUseProgram(programBG);
+        glUseProgram(programBG);
         glProgramUniformMatrix4fv(programBG, invMvpLocationBG, 1, GL_FALSE,
                                   glm::value_ptr(mvpInv));
         glProgramUniformMatrix4fv(programBG, mvpLocationBG, 1, GL_FALSE,
