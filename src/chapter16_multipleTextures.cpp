@@ -6,11 +6,10 @@
 #include <cmath>      // sin & cos
 #include <cstdlib>    // for std::exit()
 #include <fmt/core.h> // for fmt::print(). implements c++20 std::format
-#include <pystring.h>
 #include <unordered_map>
 
 #define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
+#include "stb_image.h"
 
 // this is really important to make sure that glbindings does not clash with
 // glfw's opengl includes. otherwise we get ambigous overloads.
@@ -41,7 +40,7 @@ int main() {
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
 
         /* Create a windowed mode window and its OpenGL context */
         auto window =
@@ -91,7 +90,7 @@ int main() {
     };
 
     const char* vertexShaderSource = R"(
-            #version 460 core
+            #version 450 core
             layout (location = 0) in vec3 aPosition;
             layout (location = 1) in vec3 aNormal;
             layout (location = 2) in vec2 aTexCoord;
@@ -113,7 +112,7 @@ int main() {
 
     // for bg
     const char* fragmentShaderSourceColour = R"(
-            #version 460 core
+            #version 450 core
 
             layout (location = 0) in vec3 normal;
             layout (location = 1) in vec2 uv;
@@ -127,7 +126,7 @@ int main() {
 
     // for texturing models
     const char* fragmentShaderSourceTexture = R"(
-            #version 460 core
+            #version 450 core
 
             layout (location = 0) in vec3 normal;
             layout (location = 1) in vec2 uv;
@@ -167,7 +166,7 @@ int main() {
     // clang-format on
 
     auto meshData = objLoader::readObjElements(
-        "C:/Users/dokimacbookpro/Documents/Projects/OpenGLutorialOffline/testAsets/tommi.obj");
+        "tommy.obj");
 
     for (const auto& group : meshData.groupInfos) {
         fmt::print("group name: {} with startOffset: {}, count: {}\n", group.name,

@@ -6,7 +6,6 @@
 #include <cmath>      // sin & cos
 #include <cstdlib>    // for std::exit()
 #include <fmt/core.h> // for fmt::print(). implements c++20 std::format
-#include <pystring.h>
 #include <unordered_map>
 
 // this is really important to make sure that glbindings does not clash with

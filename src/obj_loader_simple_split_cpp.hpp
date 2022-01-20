@@ -15,7 +15,6 @@
 #include <fstream>
 #include <iostream>
 #include <omp.h>
-#include <pystring.h>
 #include <sstream>
 #include <string>
 #include <unordered_map>

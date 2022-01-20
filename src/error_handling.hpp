@@ -4,6 +4,7 @@
 
 #include <glbinding/gl/gl.h>
 #include <string>
+#include <vector>
 #include <map>
 using namespace gl;
 
@@ -44,12 +45,17 @@ void MessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity,
         src, tp, sv, message);
 }
 
-bool checkShader(GLuint shaderIn, std::string shaderName) {
+bool checkShader(GLuint shaderIn, std::string shaderName, bool forceLog = false) {
     GLboolean fShaderCompiled = GL_FALSE;
     glGetShaderiv(shaderIn, GL_COMPILE_STATUS, &fShaderCompiled);
-    if (fShaderCompiled != GL_TRUE) {
-        fmt::print(stderr, "Unable to compile {0} shader {1}\n", shaderName,
+    if (fShaderCompiled != GL_TRUE || forceLog == true) {
+        if(forceLog == false){
+            fmt::print(stderr, "Unable to compile {0} shader {1}\n", shaderName,
                    shaderIn);
+        } else {
+             fmt::print(stderr, "Forcing log {0} shader {1}\n", shaderName,
+                   shaderIn);
+        }
         GLint log_length;
 
         glGetShaderiv(shaderIn, GL_INFO_LOG_LENGTH, &log_length);

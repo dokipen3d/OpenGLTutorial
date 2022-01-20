@@ -22,7 +22,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
+#include "stb_image.h"
 
 using namespace gl;
 using namespace std::chrono;
@@ -39,7 +39,7 @@ int main() {
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
 
         /* Create a windowed mode window and its OpenGL context */
         auto window =
@@ -87,8 +87,24 @@ int main() {
         return program;
     };
 
-    const char* vertexShaderSource = R"(
-            #version 460 core
+
+    const char* vertexShaderSourceColour = R"(
+            #version 450 core
+            layout (location = 0) in vec3 position;
+            layout (location = 1) in vec3 normal;
+
+            layout (location = 0) out vec3 colour;
+
+            uniform mat4 MVP;
+
+            void main(){
+                colour = normal;
+                gl_Position = MVP * vec4(position, 1.0f);
+            }
+        )";
+
+    const char* vertexShaderSourceTexture = R"(
+            #version 450 core
             layout (location = 0) in vec3 position;
             layout (location = 1) in vec3 normal;
             layout (location = 2) in vec2 texCoord;
@@ -107,10 +123,9 @@ int main() {
 
     // for bg
     const char* fragmentShaderSourceColour = R"(
-            #version 460 core
+            #version 450 core
 
             layout (location = 0) in vec3 colour;
-            layout (location = 1) in vec2 uv;
             out vec4 finalColor;
 
             void main() {
@@ -120,7 +135,7 @@ int main() {
 
     // for texturing models
     const char* fragmentShaderSourceTexture = R"(
-            #version 460 core
+            #version 450 core
 
             layout (location = 0) in vec3 colour;
             layout (location = 1) in vec2 uv;
@@ -134,8 +149,8 @@ int main() {
             }
         )";
 
-    auto vertexColourProgram = createShaderProgram(vertexShaderSource, fragmentShaderSourceColour);
-    auto textureProgram = createShaderProgram(vertexShaderSource, fragmentShaderSourceTexture);
+    auto vertexColourProgram = createShaderProgram(vertexShaderSourceColour, fragmentShaderSourceColour);
+    auto textureProgram = createShaderProgram(vertexShaderSourceTexture, fragmentShaderSourceTexture);
 
     // clang-format off
     const std::vector<vertex3D> backGroundVertices {{
@@ -163,19 +178,24 @@ int main() {
         glNamedBufferStorage(bufferObject, vertices.size() * sizeof(vertex3D), vertices.data(),
                              GL_MAP_WRITE_BIT | GL_DYNAMIC_STORAGE_BIT);
 
-        glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "aPosition"),
+        fmt::print(stderr, "pos {} \n", glGetAttribLocation(program, "position"));
+        glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "position"),
                                    /*buffer index*/ 0);
         glVertexArrayAttribFormat(vao, 0, glm::vec3::length(), GL_FLOAT, GL_FALSE,
                                   offsetof(vertex3D, position));
         glEnableVertexArrayAttrib(vao, 0);
 
-        glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "aNormal"), /*buffs idx*/ 0);
+        fmt::print(stderr, "normal {} \n", glGetAttribLocation(program, "normal"));
+
+        glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "normal"), /*buffs idx*/ 0);
         glVertexArrayAttribFormat(vao, 1, glm::vec3::length(), GL_FLOAT, GL_FALSE,
                                   offsetof(vertex3D, normal));
         glEnableVertexArrayAttrib(vao, 1);
 
         if(enableTexCoord){
-            glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "aTexCoord"), /*buffs idx*/ 0);
+            fmt::print(stderr, "tc {} \n", glGetAttribLocation(program, "texCoord"));
+
+            glVertexArrayAttribBinding(vao, glGetAttribLocation(program, "texCoord"), /*buffs idx*/ 0);
             glVertexArrayAttribFormat(vao, 2, glm::vec2::length(), GL_FLOAT, GL_FALSE,
                                     offsetof(vertex3D, texCoord));
             glEnableVertexArrayAttrib(vao, 2);

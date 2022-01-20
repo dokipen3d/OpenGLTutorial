@@ -10,8 +10,8 @@ set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE})
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/data/models/rubberToy.obj
     DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 
-    file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/data/models/rubberToy2.obj
-    DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+    #file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/data/models/rubberToy2.obj
+    #DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 
 
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/data/models/tommy.obj
@@ -28,11 +28,11 @@ file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/data/textures/tankTops_pants_boots_diffuse
 
 # makes sure we have dependencies on our machine. sets variables for us
 find_package(OpenGL REQUIRED)
-find_package(glbinding CONFIG REQUIRED)
+find_package(glbinding REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)
 find_package(glm REQUIRED)
 find_package(fmt CONFIG REQUIRED)
-find_package(tinyobjloader CONFIG REQUIRED)
+#find_package(tinyobjloader CONFIG REQUIRED)
 
 # takes the files in the src directory and adds them to a variable called SRC_LIST
 aux_source_directory(src/ SRC_LIST)
@@ -59,14 +59,14 @@ add_executable(chapter17_textureArrays src/chapter17_textureArrays.cpp)
 add_executable(chapter18_drawIndirect src/chapter18_drawIndirect.cpp)
 add_executable(chapter19_multiDrawIndexingBuffers src/chapter19_multiDrawIndexingBuffers.cpp)
 
-add_executable(testObj src/test_obj_loader.cpp)
+#add_executable(testObj src/test_obj_loader.cpp)
 
 
 # tells the compiler to use c++ 11 
 set_property(GLOBAL PROPERTY CXX_STANDARD 11)
 
-set(LIBRARIES fmt::fmt
-    fmt::fmt-header-only
+set(LIBRARIES 
+    fmt::fmt
     glfw
     ${OpenGL_LIBRARIES}
     glbinding::glbinding
@@ -98,6 +98,6 @@ target_link_libraries(chapter17_textureArrays PRIVATE ${LIBRARIES} )
 target_link_libraries(chapter18_drawIndirect PRIVATE ${LIBRARIES} )
 target_link_libraries(chapter19_multiDrawIndexingBuffers PRIVATE ${LIBRARIES} )
 
-target_link_libraries(testObj PRIVATE ${LIBRARIES})
+#target_link_libraries(testObj PRIVATE ${LIBRARIES})
 
 
