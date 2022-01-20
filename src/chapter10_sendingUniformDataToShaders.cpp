@@ -24,8 +24,8 @@ using namespace std::chrono;
 int main() {
 
     auto startTime = system_clock::now();
-    const int width = 1600;
-    const int height = 900;
+    const int width = 800;
+    const int height = 400;
 
     auto windowPtr = [&]() {
         if (!glfwInit()) {
@@ -53,7 +53,7 @@ int main() {
 
     // debugging
     {
-        glEnable(GL_DEBUG_OUTPUT);
+  //      glEnable(GL_DEBUG_OUTPUT);
         glDebugMessageCallback(errorHandler::MessageCallback, 0);
         glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
         glDebugMessageControl(GL_DEBUG_SOURCE_API, GL_DEBUG_TYPE_OTHER,
@@ -85,19 +85,11 @@ int main() {
     auto program = createProgram(R"(
         #version 450 core
 
-        out vec2 fragCoord;
-        uniform vec2 iResolution; // <-- is now externally set by c++ program
-
         const vec4 vertices[] = vec4[]( vec4(-1.f, -1.f, 0.0, 1.0),
                                         vec4( 3.f, -1.f, 0.0, 1.0),    
-                                        vec4(-1.f,  3.f, 0.0, 1.0));   
-
-        const vec2 fragCoords[] = vec2[]( vec2(0.0,        0.0), 
-                                          vec2(2.0 * iResolution.x, 0.0),    
-                                          vec2(0.0,        2.0 * iResolution.y));   
+                                        vec4(-1.f,  3.f, 0.0, 1.0));     
 
         void main(){
-            fragCoord = fragCoords[gl_VertexID];
             gl_Position = vertices[gl_VertexID]; 
         }
     )",
@@ -126,7 +118,7 @@ int main() {
 
     */
 
-    in vec2 fragCoord;
+    vec4 fragCoord  = gl_FragCoord;
     out vec4 fragColor;
 
     uniform float iTime; // <-- is now externally set by c++ program

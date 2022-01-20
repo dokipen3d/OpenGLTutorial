@@ -145,7 +145,7 @@ int main() {
             uniform sampler2D Texture;
 
             void main() {
-                finalColor = texture(Texture, uv);
+                finalColor = texture(Texture, uv) * vec4(colour, 1.0f);
             }
         )";
 
