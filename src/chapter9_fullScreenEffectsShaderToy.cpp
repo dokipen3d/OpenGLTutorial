@@ -24,8 +24,8 @@ using namespace std::chrono;
 int main() {
 
     auto startTime = system_clock::now();
-    const int width = 1600;
-    const int height = 900;
+    const int width = 800;
+    const int height = 400;
 
     auto windowPtr = [&]() {
         if (!glfwInit()) {
@@ -85,18 +85,11 @@ int main() {
     auto program = createProgram(R"(
         #version 450 core
 
-        out vec2 fragCoord;
-
         const vec4 vertices[] = vec4[]( vec4(-1.f, -1.f, 0.0, 1.0),
                                         vec4( 3.f, -1.f, 0.0, 1.0),    
                                         vec4(-1.f,  3.f, 0.0, 1.0));   
 
-        const vec2 fragCoords[] = vec2[]( vec2(0.0,        0.0), 
-                                          vec2(2.0 * 1920, 0.0),    
-                                          vec2(0.0,        2.0 * 1080));   
-
         void main(){
-            fragCoord = fragCoords[gl_VertexID];
             gl_Position = vertices[gl_VertexID]; 
         }
     )",
@@ -124,12 +117,11 @@ int main() {
         the fog is evaluated as the difference of the fog integral at each rendered step.
 
     */
-
-         in vec2 fragCoord;
+        vec4 fragCoord  = gl_FragCoord;
         out vec4 fragColor;
 
-         float iTime = 1.11f;
-         vec2 iResolution = vec2(1920,1080);
+         float iTime = 4.0f;
+        vec2 iResolution = vec2(800,400);
         vec2 iMouse = vec2(960.f,0.f);
     mat2 rot(in float a){float c = cos(a), s = sin(a);return mat2(c,s,-s,c);}
     const mat3 m3 = mat3(0.33338, 0.56034, -0.71817, -0.87887, 0.32651, -0.15323, 0.15162, 0.69596, 0.61339)*1.93;

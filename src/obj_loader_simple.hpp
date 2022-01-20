@@ -3,12 +3,9 @@
 #include <fmt/core.h>
 #include <vector>
 #include <cstdio>
-
-
 #include "glm/glm.hpp"
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/hash.hpp>
-
 
 struct vertex3D {
     glm::vec3 position;
@@ -41,7 +38,6 @@ struct RawMeshData {
 
 };
 
-
 RawMeshData readObjRaw(const std::string& filePath) {
     RawMeshData meshData;
 
@@ -49,7 +45,6 @@ RawMeshData readObjRaw(const std::string& filePath) {
     if (!fp) {
         fmt::print(stderr, "Error opening file\n");
     }
-
 
     char line[128];
     size_t line_size;
@@ -65,7 +60,6 @@ RawMeshData readObjRaw(const std::string& filePath) {
             spacePositions.clear();
             key = packCharsToIntKey(line[0], line[1]);
         }
-
         
         // spaces after the first will always be after 3
         for (auto i = 0u; i < line_size; ++i) {
@@ -75,7 +69,6 @@ RawMeshData readObjRaw(const std::string& filePath) {
             }
         }
         spacePositions.push_back(static_cast<int>(line_size));
-
 
         switch (key) {
 
@@ -178,6 +171,4 @@ MeshDataSplit readObjSplit(const std::string& filePath) {
 
     return meshData;
 }
-
-
 }
