@@ -169,7 +169,7 @@ int main() {
     // clang-format on
 
     auto meshData = objLoader::readObjElements(
-        "C:/Users/dokimacbookpro/Documents/Projects/OpenGLutorialOffline/testAsets/tommi.obj");
+        "tommy.obj");
 
     for (const auto& group : meshData.groupInfos) {
         fmt::print("group name: {} with startOffset: {}, count: {}\n", group.name,

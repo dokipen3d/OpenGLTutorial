@@ -1,10 +1,18 @@
 # The name of our project
 project(OpenGLTutorial)
-
+enable_language(CXX)
 # we want to use a recent version of cmake
 cmake_minimum_required(VERSION 3.18)
+MESSAGE(STATUS "build type is: ${CMAKE_BUILD_TYPE}")
 
-set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE})
+set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})#/${CMAKE_BUILD_TYPE})
+
+SET( CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}")
+SET( CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}")
+SET( CMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}")
+SET( CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}")
+SET( CMAKE_ARCHIVE_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}")
+SET( CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}")
 
 # for chapter 8 we need a file to load
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/data/models/rubberToy.obj
@@ -60,9 +68,6 @@ add_executable(chapter16_multipleTextures src/chapter16_multipleTextures.cpp)
 add_executable(chapter17_textureArrays src/chapter17_textureArrays.cpp)
 add_executable(chapter18_drawIndirect src/chapter18_drawIndirect.cpp)
 add_executable(chapter19_multiDrawIndexingBuffers src/chapter19_multiDrawIndexingBuffers.cpp)
-
-#add_executable(testObj src/test_obj_loader.cpp)
-
 
 # tells the compiler to use c++ 11 
 set_property(GLOBAL PROPERTY CXX_STANDARD 11)
