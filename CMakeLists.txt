@@ -70,7 +70,35 @@ add_executable(chapter18_drawIndirect src/chapter18_drawIndirect.cpp)
 add_executable(chapter19_multiDrawIndexingBuffers src/chapter19_multiDrawIndexingBuffers.cpp)
 
 # tells the compiler to use c++ 11 
-set_property(GLOBAL PROPERTY CXX_STANDARD 11)
+#set_property(GLOBAL PROPERTY CXX_STANDARD 17)
+
+set_target_properties(  chapter1_HelloWorld 
+                        chapter2_windowCreation
+                        chapter3_helloTriangle
+                        chapter4_errorHandling
+                        chapter5_vertexData
+                        chapter6_multipleBuffers
+                        chapter7_interleavingVertexData
+                        chapter8_multipleVAOs 
+                        chapter9_fullScreenEffectsShaderToy
+                        chapter9_fullScreenEffectsShaderToy
+                        chapter10_sendingUniformDataToShaders
+                        chapter11_loading3DDataFromDisk 
+                        chapter11_loading3DDataFromDiskSimple 
+                        chapter12_shaderTransforms 
+                        chapter13_elementBuffers
+                        chapter14_textures 
+                        chapter15_basicDiffuseLighting
+                        chapter16_multipleTextures
+                        chapter17_textureArrays
+                        chapter18_drawIndirect
+                        chapter19_multiDrawIndexingBuffers
+
+                        PROPERTIES
+            CXX_STANDARD 17
+            CXX_EXTENSIONS OFF
+)
+
 
 set(LIBRARIES 
     fmt::fmt
@@ -80,7 +108,6 @@ set(LIBRARIES
     glbinding::glbinding-aux
     ${STB_INCLUDE_DIRS}
     )
-
 
     
 # which libraries our program must link against

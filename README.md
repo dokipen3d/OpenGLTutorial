@@ -26,3 +26,5 @@ sudo apt-get install libglbinding-dev
 /vcpkg install tinyobjloader
 ./vcpkg integrate install
 cmake .. -DCMAKE_TOOLCHAIN_FILE=/home/dokipen/Documents/projects/vcpkg/scripts/buildsystems/vcpkg.cmake
+
+cmake --build . --config Release

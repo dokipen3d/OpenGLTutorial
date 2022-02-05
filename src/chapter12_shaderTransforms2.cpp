@@ -24,12 +24,14 @@
 using namespace gl;
 using namespace std::chrono;
 
-int main() {
+int main(int argc, char *argv[]) {
 
     auto startTime = system_clock::now();
 
     const int width = 1600;
     const int height = 900;
+
+    fmt::print("Program Location {}\n", argv[0] );
 
     auto windowPtr = [&]() {
         if (!glfwInit()) {

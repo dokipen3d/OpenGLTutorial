@@ -5,6 +5,7 @@
 #include <chrono>     // current time
 #include <cmath>      // sin & cos
 #include <cstdlib>    // for std::exit()
+#include <filesystem>
 #include <fmt/core.h> // for fmt::print(). implements c++20 std::format
 
 // this is really important to make sure that glbindings does not clash with
@@ -65,12 +66,20 @@
 using namespace gl;
 using namespace std::chrono;
 
-int main() {
+int main(int argc, char *argv[]) {
 
     auto startTime = system_clock::now();
 
     const int width = 1600;
     const int height = 900;
+
+    
+    std::string argv_str(argv[0]);
+    //std::string base = argv_str.substr(0, argv_str.find_last_of("\\"));
+
+    std::string base = std::filesystem::current_path().string();
+    fmt::print("Program Location {}\n", base );
+
 
     auto windowPtr = [&]() {
         if (!glfwInit()) {
@@ -322,7 +331,7 @@ int main() {
         )",
                                  fragmentShaderSource);
 
-    auto meshData = objLoader::readObjSplit("tommy.obj");
+    auto meshData = objLoader::readObjSplit(base+"/tommy.obj");
 
     auto createBuffer =
         [&program](const std::vector<vertex3D>& vertices) -> GLuint {
